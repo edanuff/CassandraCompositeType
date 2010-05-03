@@ -25,6 +25,11 @@ CompositeTypeBuilder builder = new CompositeTypeBuilder();
 builder.addAscii("hello").addLong(255);
 byte[] bytes = builder.getBytes();
 
-The actual composite type consists of 1 byte to specify the
-component type, and then for variable length types such as ASCII strings,
-2 bytes are used for each string length.
+The composite type is encoded as a byte array consisting of each component part
+preceded by 1 byte to specify the component type, and then for variable length types 
+such as ASCII strings, 2 bytes are used for the length of the string:
+
+In the above example, the following byte array would be produced for the composite
+name:
+
+02 00 05 68 65 6C 6C 6F 00 00 00 00 00 00 00 00 FF
