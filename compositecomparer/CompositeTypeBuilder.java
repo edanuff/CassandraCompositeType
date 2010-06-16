@@ -3,15 +3,16 @@ package compositecomparer;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.UUID;
 
 /**
  * CompositeTypeBuilder is a utility class for creating composite types for the
  * CompositeType comparer.
  * <p>
  * Internally, this class constructs a ByteArrayOutputStream with the appended
- * data for each component type.  It's possible, although very unlikely, that
- * an IOException can be thrown while adding a component type.  If this occurs
- * in production code, it likely represents an out of memory condition.  In any
+ * data for each component type. It's possible, although very unlikely, that an
+ * IOException can be thrown while adding a component type. If this occurs in
+ * production code, it likely represents an out of memory condition. In any
  * case, it goes without saying that any column name generated if an exception
  * is thrown should not be used to proceed with an insert.
  */
@@ -104,7 +105,7 @@ public class CompositeTypeBuilder {
 	 *            the component part to append as a time-based UUID
 	 * @return the composite type builder for chained invocation
 	 */
-	public CompositeTypeBuilder addTimeUUID(java.util.UUID uuid)
+	public CompositeTypeBuilder addTimeUUID(UUID uuid)
 			throws IOException {
 		byte[] bytes = CompositeTypeUtils.bytes(uuid);
 		out.write(CompositeType.COLUMNTYPE_TIMEUUID);
@@ -119,11 +120,43 @@ public class CompositeTypeBuilder {
 	 *            the component part to append as a regular UUID
 	 * @return the composite type builder for chained invocation
 	 */
-	public CompositeTypeBuilder addLexicalUUID(java.util.UUID uuid)
+	public CompositeTypeBuilder addLexicalUUID(UUID uuid)
 			throws IOException {
 		byte[] bytes = CompositeTypeUtils.bytes(uuid);
 		out.write(CompositeType.COLUMNTYPE_LEXICALUUID);
 		out.write(bytes);
 		return this;
 	}
+
+	public CompositeTypeBuilder addMatchMinimum() throws IOException {
+		out.write(CompositeType.COLUMNTYPE_MINIMUM);
+		return this;
+	}
+
+	public CompositeTypeBuilder addMatchMaximum() throws IOException {
+		out.write(CompositeType.COLUMNTYPE_MAXIMUM);
+		return this;
+	}
+	
+	public static byte[] composite(Object... objects) throws IOException {
+		CompositeTypeBuilder builder = new CompositeTypeBuilder();
+		for (Object obj : objects) {
+			if (obj instanceof Long) builder.addLong(((Long)obj).longValue());
+			else if (obj instanceof String) builder.addUTF8((String)obj);
+			else if (obj instanceof UUID) {
+				if (CompositeTypeUtils.isTimeBased((UUID)obj)) {
+					builder.addTimeUUID((UUID)obj);
+				}
+				else {
+					builder.addLexicalUUID((UUID)obj);
+				}
+			}
+			else if (obj instanceof byte[]) {
+				builder.addBytes((byte[])obj);
+			}
+		}
+		return builder.getBytes();
+	}
+	
+
 }

@@ -70,5 +70,15 @@ public class CompositeTypeUtils {
 			throw new RuntimeException(e);
 		}
 	}
+	
+	public static boolean isTimeBased(UUID uuid) {
+		try {
+			uuid.timestamp();
+			return true;
+		}
+		catch (UnsupportedOperationException e) {
+		}
+		return false;
+	}
 
 }

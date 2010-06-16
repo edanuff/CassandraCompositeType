@@ -5,6 +5,8 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.cassandra.utils.FBUtilities;
+
 public class Test {
 
 	private static final Logger logger = Logger.getLogger(Test.class.getName());
@@ -26,8 +28,10 @@ public class Test {
 			CompositeType comparer = new CompositeType();
 
 			CompositeTypeBuilder builder = new CompositeTypeBuilder();
-			builder.addAscii("hello").addLong(255);
+			builder.addUTF8("smith").addUTF8("bob").addLong(System.currentTimeMillis());
 			byte[] o1 = builder.getBytes();
+			
+			logger.info(comparer.getString(o1) + " is encoded as " + FBUtilities.bytesToHex(o1));
 
 			builder = new CompositeTypeBuilder();
 			builder.addAscii("hello").addLong(256);
