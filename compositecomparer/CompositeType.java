@@ -41,20 +41,25 @@ public class CompositeType extends AbstractType {
 	static final Logger logger = Logger
 			.getLogger(CompositeType.class.getName());
 
-	public final static int COLUMNTYPE_LONG = 0;
+	public final static int COMPOSITETYPE_ID = 0xED;
 
-	public final static int COLUMNTYPE_BYTES = 1;
+	public final static int COMPOSITETYPE_VERSION = 1;
 
-	public final static int COLUMNTYPE_ASCII = 2;
+	public final static int COMPONENT_MINIMUM = 0;
 
-	public final static int COLUMNTYPE_UTF8 = 3;
+	public final static int COMPONENT_LONG = 1;
 
-	public final static int COLUMNTYPE_LEXICALUUID = 4;
+	public final static int COMPONENT_TIMEUUID = 2;
 
-	public final static int COLUMNTYPE_TIMEUUID = 5;
+	public final static int COMPONENT_LEXICALUUID = 3;
 
-	public final static int COLUMNTYPE_MINIMUM = 16;
-	public final static int COLUMNTYPE_MAXIMUM = 17;
+	public final static int COMPONENT_ASCII = 4;
+
+	public final static int COMPONENT_UTF8 = 5;
+
+	public final static int COMPONENT_BYTES = 6;
+
+	public final static int COMPONENT_MAXIMUM = 255;
 
 	public static final String UTF8_ENCODING = "UTF-8";
 
@@ -66,61 +71,72 @@ public class CompositeType extends AbstractType {
 	}
 
 	public static String columnNameToString(byte[] bytes) {
-		//System.out.println("column name bytes: "
-		//		+ getBytesString(bytes, 0, bytes.length));
+		// System.out.println("column name bytes: "
+		// + getBytesString(bytes, 0, bytes.length));
 
 		if ((bytes == null) || (bytes.length == 0))
 			return "";
 
+		if ((bytes[0] & 0xFF) != COMPOSITETYPE_ID) {
+			throw new MarshalException("Not a composite type");
+		}
+
+		if ((bytes[1] & 0xFF) != COMPOSITETYPE_VERSION) {
+			throw new MarshalException(
+					"Incorrect composite type version for this comparer, expected "
+							+ COMPOSITETYPE_VERSION + ", found "
+							+ (bytes[1] & 0xFF));
+		}
+
 		StringBuilder result = new StringBuilder();
 
-		int offset = 0;
+		int offset = 2;
 		int len = 0;
 		int type = 0;
 
 		while (true) {
 			type = bytes[offset] & 0xff;
-			//System.out.println(type);
+			// System.out.println(type);
 
 			switch (type) {
-			case COLUMNTYPE_BYTES:
+			case COMPONENT_BYTES:
 				len = getShort(bytes, offset + 1);
-				//System.out.println(len);
+				// System.out.println(len);
 				result.append(getBytesString(bytes, offset + 3, len));
 				offset += len + 3;
 				break;
 
-			case COLUMNTYPE_ASCII:
+			case COMPONENT_ASCII:
 				len = getShort(bytes, offset + 1);
-				//System.out.println(len);
+				// System.out.println(len);
 				result.append(getAsciiString(bytes, offset + 3, len));
 				offset += len + 3;
 				break;
 
-			case COLUMNTYPE_UTF8:
+			case COMPONENT_UTF8:
 				len = getShort(bytes, offset + 1);
-				//System.out.println(len);
+				// System.out.println(len);
 				result.append(getUTF8String(bytes, offset + 3, len));
 				offset += len + 3;
 				break;
 
-			case COLUMNTYPE_LONG:
+			case COMPONENT_LONG:
 				result.append(getLongString(bytes, offset + 1));
 				offset += 9;
 				break;
 
-			case COLUMNTYPE_LEXICALUUID:
-			case COLUMNTYPE_TIMEUUID:
+			case COMPONENT_LEXICALUUID:
+			case COMPONENT_TIMEUUID:
 				result.append(getUUIDString(bytes, offset + 1));
 				offset += 17;
 				break;
 
-			case COLUMNTYPE_MINIMUM:
+			case COMPONENT_MINIMUM:
 				result.append("MIN");
 				offset += 1;
 				break;
 
-			case COLUMNTYPE_MAXIMUM:
+			case COMPONENT_MAXIMUM:
 				result.append("MAX");
 				offset += 1;
 				break;
@@ -149,37 +165,36 @@ public class CompositeType extends AbstractType {
 			return 1;
 		}
 
+		if (((o1[0] & 0xFF) != COMPOSITETYPE_ID) || ((o2[0] & 0xFF) != COMPOSITETYPE_ID)) {
+			throw new MarshalException("Not a composite type");
+		}
+
+		if (((o1[1] & 0xFF) != COMPOSITETYPE_VERSION) || ((o2[1] & 0xFF) != COMPOSITETYPE_VERSION)) {
+			throw new MarshalException(
+					"Incorrect composite type version for this comparer");
+		}
+
 		int comp = 0;
 
-		int offset1 = 0;
+		int offset1 = 2;
 		int len1 = 0;
 		int type1 = 0;
 
-		int offset2 = 0;
+		int offset2 = 2;
 		int len2 = 0;
 		int type2 = 0;
 
 		while (true) {
-			type1 = o1[offset1];
-			type2 = o2[offset2];
-
-			if (type1 == COLUMNTYPE_MINIMUM)
-				return (type2 == COLUMNTYPE_MINIMUM) ? 0 : -1;
-			if (type1 == COLUMNTYPE_MAXIMUM)
-				return (type2 == COLUMNTYPE_MAXIMUM) ? 0 : 1;
-			if (type2 == COLUMNTYPE_MINIMUM)
-				return 1;
-			if (type2 == COLUMNTYPE_MAXIMUM)
-				return -1;
+			type1 = o1[offset1] & 0xff;
+			type2 = o2[offset2] & 0xff;
 
 			if (type1 != type2) {
-				return compareByteArrays(o1, offset1 + 1, -1, o2, offset2 + 1,
-						-1);
+				return type1 < type2 ? -1 : 1;
 			}
 
 			switch (type1) {
-			case COLUMNTYPE_BYTES:
-			case COLUMNTYPE_ASCII:
+			case COMPONENT_BYTES:
+			case COMPONENT_ASCII:
 				len1 = getShort(o1, offset1 + 1);
 				len2 = getShort(o2, offset2 + 1);
 				comp = compareByteArrays(o1, offset1 + 3, len1, o2,
@@ -188,7 +203,7 @@ public class CompositeType extends AbstractType {
 				offset2 += len2 + 3;
 				break;
 
-			case COLUMNTYPE_UTF8:
+			case COMPONENT_UTF8:
 				len1 = getShort(o1, offset1 + 1);
 				len2 = getShort(o2, offset2 + 1);
 				comp = compareUTF8(o1, offset1 + 3, len1, o2, offset2 + 3, len2);
@@ -196,23 +211,28 @@ public class CompositeType extends AbstractType {
 				offset2 += len2 + 3;
 				break;
 
-			case COLUMNTYPE_LONG:
+			case COMPONENT_LONG:
 				comp = compareLong(o1, offset1 + 1, o2, offset2 + 1);
 				offset1 += 9;
 				offset2 += 9;
 				break;
 
-			case COLUMNTYPE_LEXICALUUID:
+			case COMPONENT_LEXICALUUID:
 				comp = compareLexicalUUID(o1, offset1 + 1, o2, offset2 + 1);
 				offset1 += 17;
 				offset2 += 17;
 				break;
 
-			case COLUMNTYPE_TIMEUUID:
+			case COMPONENT_TIMEUUID:
 				comp = compareTimeUUID(o1, offset1 + 1, o2, offset2 + 1);
 				offset1 += 17;
 				offset2 += 17;
 				break;
+
+			case COMPONENT_MINIMUM:
+			case COMPONENT_MAXIMUM:
+				offset1 += 1;
+				offset2 += 1;
 
 			default:
 				throw new MarshalException("Unknown embedded type: " + type1);

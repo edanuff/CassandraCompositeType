@@ -25,9 +25,11 @@ public class CompositeTypeBuilder {
 	/**
 	 * Default constructor.
 	 */
-	public CompositeTypeBuilder() {
+	public CompositeTypeBuilder() throws IOException {
 		byteStream = new ByteArrayOutputStream();
 		out = new DataOutputStream(byteStream);
+		out.write(CompositeType.COMPOSITETYPE_ID);
+		out.write(CompositeType.COMPOSITETYPE_VERSION);
 	}
 
 	/**
@@ -48,7 +50,7 @@ public class CompositeTypeBuilder {
 	 * @return the composite type builder for chained invocation
 	 */
 	public CompositeTypeBuilder addBytes(byte[] part) throws IOException {
-		out.write(CompositeType.COLUMNTYPE_BYTES);
+		out.write(CompositeType.COMPONENT_BYTES);
 		out.writeShort(part.length);
 		out.write(part);
 		return this;
@@ -64,7 +66,7 @@ public class CompositeTypeBuilder {
 	public CompositeTypeBuilder addAscii(String str) throws IOException {
 		byte[] bytes = CompositeTypeUtils.bytes(str,
 				CompositeType.ASCII_ENCODING);
-		out.write(CompositeType.COLUMNTYPE_ASCII);
+		out.write(CompositeType.COMPONENT_ASCII);
 		out.writeShort(bytes.length);
 		out.write(bytes);
 		return this;
@@ -79,7 +81,7 @@ public class CompositeTypeBuilder {
 	 */
 	public CompositeTypeBuilder addUTF8(String str) throws IOException {
 		byte[] bytes = CompositeTypeUtils.bytes(str);
-		out.write(CompositeType.COLUMNTYPE_UTF8);
+		out.write(CompositeType.COMPONENT_UTF8);
 		out.writeShort(bytes.length);
 		out.write(bytes);
 		return this;
@@ -93,7 +95,7 @@ public class CompositeTypeBuilder {
 	 * @return the composite type builder for chained invocation
 	 */
 	public CompositeTypeBuilder addLong(long val) throws IOException {
-		out.write(CompositeType.COLUMNTYPE_LONG);
+		out.write(CompositeType.COMPONENT_LONG);
 		out.writeLong(val);
 		return this;
 	}
@@ -108,7 +110,7 @@ public class CompositeTypeBuilder {
 	public CompositeTypeBuilder addTimeUUID(UUID uuid)
 			throws IOException {
 		byte[] bytes = CompositeTypeUtils.bytes(uuid);
-		out.write(CompositeType.COLUMNTYPE_TIMEUUID);
+		out.write(CompositeType.COMPONENT_TIMEUUID);
 		out.write(bytes);
 		return this;
 	}
@@ -123,18 +125,18 @@ public class CompositeTypeBuilder {
 	public CompositeTypeBuilder addLexicalUUID(UUID uuid)
 			throws IOException {
 		byte[] bytes = CompositeTypeUtils.bytes(uuid);
-		out.write(CompositeType.COLUMNTYPE_LEXICALUUID);
+		out.write(CompositeType.COMPONENT_LEXICALUUID);
 		out.write(bytes);
 		return this;
 	}
 
 	public CompositeTypeBuilder addMatchMinimum() throws IOException {
-		out.write(CompositeType.COLUMNTYPE_MINIMUM);
+		out.write(CompositeType.COMPONENT_MINIMUM);
 		return this;
 	}
 
 	public CompositeTypeBuilder addMatchMaximum() throws IOException {
-		out.write(CompositeType.COLUMNTYPE_MAXIMUM);
+		out.write(CompositeType.COMPONENT_MAXIMUM);
 		return this;
 	}
 	

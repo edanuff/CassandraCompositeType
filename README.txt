@@ -40,12 +40,13 @@ with "b", you could do the following:
 byte[] slice_start = composite("smith", "b\u0000");
 byte[] slice_end = composite("smith", "b\uFFFF");
 
-The composite type is encoded as a byte array consisting of each component part
-preceded by 1 byte to specify the component type, and then for variable length types
-such as ASCII strings, 2 bytes are used for the length of the string:
+The composite type is encoded as a byte array consisting of a prefix byte and a
+version byte followed by each component part.  Each component part starts with
+1 byte to specify the component type, and then for variable length types such
+as ASCII strings, 2 bytes are used for the length of the string:
 
 In the above example, the following byte array would be produced for the composite
 name:
 
-03 00 05 73 6d 69 74 68 03 00 03 62 6f 62 00 00 00 01 29 42 62 6c 2b
+ed 01 05 00 05 73 6d 69 74 68 05 00 03 62 6f 62 01 00 00 01 29 47 2f 24 e0
 
