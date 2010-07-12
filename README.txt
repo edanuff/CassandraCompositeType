@@ -30,15 +30,15 @@ byte[] column_name = builder.getBytes();
 A convenience method is provided as well, although it makes certain assumptions
 that you might want to very are applicable.  You use it like this:
 
-import static compositecomparer.CompositeTypeBuilder.composite;
+import static compositecomparer.CompositeTypeUtils.serialize;
 
-byte[] cname = composite("smith", "bob", new Long(System.currentTimeMillis()));
+byte[] cname = serialize("smith", "bob", new Long(System.currentTimeMillis()));
 
 If you wanted to find all users with the last name "smith" whose name started
 with "b", you could do the following:
 
-byte[] slice_start = composite("smith", "b\u0000");
-byte[] slice_end = composite("smith", "b\uFFFF");
+byte[] slice_start = serialize("smith", "b");
+byte[] slice_end = serialize("smith", "b\uFFFF");
 
 The composite type is encoded as a byte array consisting of a prefix byte and a
 version byte followed by each component part.  Each component part starts with
