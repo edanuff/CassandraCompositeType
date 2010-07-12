@@ -3,7 +3,10 @@ package compositecomparer;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * CompositeTypeBuilder is a utility class for creating composite types for the
@@ -18,6 +21,9 @@ import java.util.UUID;
  */
 public class CompositeTypeBuilder {
 
+	static final Logger logger = Logger.getLogger(CompositeTypeBuilder.class
+			.getName());
+
 	ByteArrayOutputStream byteStream;
 
 	DataOutputStream out;
@@ -28,8 +34,8 @@ public class CompositeTypeBuilder {
 	public CompositeTypeBuilder() throws IOException {
 		byteStream = new ByteArrayOutputStream();
 		out = new DataOutputStream(byteStream);
-		out.write(CompositeType.COMPOSITETYPE_ID);
-		out.write(CompositeType.COMPOSITETYPE_VERSION);
+		out.write(CompositeTypeUtils.COMPOSITETYPE_ID);
+		out.write(CompositeTypeUtils.COMPOSITETYPE_VERSION);
 	}
 
 	/**
@@ -50,7 +56,7 @@ public class CompositeTypeBuilder {
 	 * @return the composite type builder for chained invocation
 	 */
 	public CompositeTypeBuilder addBytes(byte[] part) throws IOException {
-		out.write(CompositeType.COMPONENT_BYTES);
+		out.write(CompositeTypeUtils.COMPONENT_BYTES);
 		out.writeShort(part.length);
 		out.write(part);
 		return this;
@@ -64,9 +70,8 @@ public class CompositeTypeBuilder {
 	 * @return the composite type builder for chained invocation
 	 */
 	public CompositeTypeBuilder addAscii(String str) throws IOException {
-		byte[] bytes = CompositeTypeUtils.bytes(str,
-				CompositeType.ASCII_ENCODING);
-		out.write(CompositeType.COMPONENT_ASCII);
+		byte[] bytes = bytes(str, CompositeTypeUtils.ASCII_ENCODING);
+		out.write(CompositeTypeUtils.COMPONENT_ASCII);
 		out.writeShort(bytes.length);
 		out.write(bytes);
 		return this;
@@ -80,10 +85,23 @@ public class CompositeTypeBuilder {
 	 * @return the composite type builder for chained invocation
 	 */
 	public CompositeTypeBuilder addUTF8(String str) throws IOException {
-		byte[] bytes = CompositeTypeUtils.bytes(str);
-		out.write(CompositeType.COMPONENT_UTF8);
+		byte[] bytes = bytes(str);
+		out.write(CompositeTypeUtils.COMPONENT_UTF8);
 		out.writeShort(bytes.length);
 		out.write(bytes);
+		return this;
+	}
+
+	/**
+	 * Adds the provided boolean value to the composite type being built.
+	 * 
+	 * @param val
+	 *            the component part to append as a boolean value
+	 * @return the composite type builder for chained invocation
+	 */
+	public CompositeTypeBuilder addBool(boolean val) throws IOException {
+		out.write(CompositeTypeUtils.COMPONENT_BOOL);
+		out.writeBoolean(val);
 		return this;
 	}
 
@@ -95,7 +113,7 @@ public class CompositeTypeBuilder {
 	 * @return the composite type builder for chained invocation
 	 */
 	public CompositeTypeBuilder addLong(long val) throws IOException {
-		out.write(CompositeType.COMPONENT_LONG);
+		out.write(CompositeTypeUtils.COMPONENT_LONG);
 		out.writeLong(val);
 		return this;
 	}
@@ -107,10 +125,9 @@ public class CompositeTypeBuilder {
 	 *            the component part to append as a time-based UUID
 	 * @return the composite type builder for chained invocation
 	 */
-	public CompositeTypeBuilder addTimeUUID(UUID uuid)
-			throws IOException {
-		byte[] bytes = CompositeTypeUtils.bytes(uuid);
-		out.write(CompositeType.COMPONENT_TIMEUUID);
+	public CompositeTypeBuilder addTimeUUID(UUID uuid) throws IOException {
+		byte[] bytes = bytes(uuid);
+		out.write(CompositeTypeUtils.COMPONENT_TIMEUUID);
 		out.write(bytes);
 		return this;
 	}
@@ -122,43 +139,49 @@ public class CompositeTypeBuilder {
 	 *            the component part to append as a regular UUID
 	 * @return the composite type builder for chained invocation
 	 */
-	public CompositeTypeBuilder addLexicalUUID(UUID uuid)
-			throws IOException {
-		byte[] bytes = CompositeTypeUtils.bytes(uuid);
-		out.write(CompositeType.COMPONENT_LEXICALUUID);
+	public CompositeTypeBuilder addLexicalUUID(UUID uuid) throws IOException {
+		byte[] bytes = bytes(uuid);
+		out.write(CompositeTypeUtils.COMPONENT_LEXICALUUID);
 		out.write(bytes);
 		return this;
 	}
 
 	public CompositeTypeBuilder addMatchMinimum() throws IOException {
-		out.write(CompositeType.COMPONENT_MINIMUM);
+		out.write(CompositeTypeUtils.COMPONENT_MINIMUM);
 		return this;
 	}
 
 	public CompositeTypeBuilder addMatchMaximum() throws IOException {
-		out.write(CompositeType.COMPONENT_MAXIMUM);
+		out.write(CompositeTypeUtils.COMPONENT_MAXIMUM);
 		return this;
 	}
-	
-	public static byte[] composite(Object... objects) throws IOException {
-		CompositeTypeBuilder builder = new CompositeTypeBuilder();
-		for (Object obj : objects) {
-			if (obj instanceof Long) builder.addLong(((Long)obj).longValue());
-			else if (obj instanceof String) builder.addUTF8((String)obj);
-			else if (obj instanceof UUID) {
-				if (CompositeTypeUtils.isTimeBased((UUID)obj)) {
-					builder.addTimeUUID((UUID)obj);
-				}
-				else {
-					builder.addLexicalUUID((UUID)obj);
-				}
-			}
-			else if (obj instanceof byte[]) {
-				builder.addBytes((byte[])obj);
-			}
+
+	static byte[] bytes(UUID uuid) {
+		long msb = uuid.getMostSignificantBits();
+		long lsb = uuid.getLeastSignificantBits();
+		byte[] buffer = new byte[16];
+
+		for (int i = 0; i < 8; i++) {
+			buffer[i] = (byte) (msb >>> 8 * (7 - i));
 		}
-		return builder.getBytes();
+		for (int i = 8; i < 16; i++) {
+			buffer[i] = (byte) (lsb >>> 8 * (7 - i));
+		}
+
+		return buffer;
 	}
-	
+
+	static byte[] bytes(String s) {
+		return bytes(s, CompositeTypeUtils.UTF8_ENCODING);
+	}
+
+	static byte[] bytes(String s, String encoding) {
+		try {
+			return s.getBytes(encoding);
+		} catch (UnsupportedEncodingException e) {
+			logger.log(Level.SEVERE, "UnsupportedEncodingException ", e);
+			throw new RuntimeException(e);
+		}
+	}
 
 }
