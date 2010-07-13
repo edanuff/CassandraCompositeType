@@ -1,8 +1,6 @@
 package compositecomparer;
 
-import java.io.IOException;
 import java.util.UUID;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.cassandra.utils.FBUtilities;
@@ -24,49 +22,42 @@ public class Test {
 
 	public static void main(String[] args) {
 
-		try {
-			CompositeType comparer = new CompositeType();
+		CompositeType comparer = new CompositeType();
 
-			CompositeTypeCollection c = new CompositeTypeCollection();
-			c.addUTF8("smith").addUTF8("bob").addLong(System.currentTimeMillis());
-			byte[] o1 = c.serialize();
-			logger.info(CompositeTypeUtils.toString(o1));
-			
-			logger.info(comparer.getString(o1) + " is encoded as " + FBUtilities.bytesToHex(o1));
+		Composite c = new Composite("smith", "bob", System.currentTimeMillis());
+		byte[] o1 = c.serialize();
+		logger.info(c.toString());
 
-			c = new CompositeTypeCollection();
-			c.addAscii("hello").addLong(256);
-			byte[] o2 = c.serialize();
+		logger.info(comparer.getString(o1) + " is encoded as "
+				+ FBUtilities.bytesToHex(o1));
 
-			logCompare(comparer, o1, o2);
+		c = new Composite();
+		c.addAscii("hello").addLong(256);
+		byte[] o2 = c.serialize();
 
-			UUID u1 = getTimeUUID();
+		logCompare(comparer, o1, o2);
 
-			c = new CompositeTypeCollection();
-			c.addTimeUUID(u1).addLong(256);
-			o1 = c.serialize();
+		UUID u1 = getTimeUUID();
 
-			u1 = getTimeUUID();
-			c = new CompositeTypeCollection();
-			c.addTimeUUID(u1).addLong(256);
-			o2 = c.serialize();
+		c = new Composite();
+		c.addTimeUUID(u1).addLong(256);
+		o1 = c.serialize();
 
-			logCompare(comparer, o1, o2);
+		u1 = getTimeUUID();
+		c = new Composite();
+		c.addTimeUUID(u1).addLong(256);
+		o2 = c.serialize();
 
-			c = new CompositeTypeCollection();
-			c.addLong(256);
-			o1 = c.serialize();
+		logCompare(comparer, o1, o2);
 
-			c = new CompositeTypeCollection();
-			c.addLong(256);
-			o2 = c.serialize();
+		c = new Composite(256);
+		o1 = c.serialize();
 
-			logCompare(comparer, o1, o2);
+		c = new Composite();
+		c.addLong(256);
+		o2 = c.serialize();
 
-		} catch (IOException e) {
-			logger.log(Level.SEVERE,
-					"IOException while constucting composite type", e);
-		}
+		logCompare(comparer, o1, o2);
 
 	}
 

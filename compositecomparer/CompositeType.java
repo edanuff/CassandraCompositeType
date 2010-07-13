@@ -22,7 +22,7 @@ import org.apache.cassandra.db.marshal.MarshalException;
  * To construct a composite name for a new column, use the following:
  * <p>
  * <code>
- * CompositeTypeCollection c = new CompositeTypeCollection();<br>
+ * Composite c = new Composite();<br>
  * c.addUTF8("smith").addUTF8("bob").addLexicalUUID(new UUID());<br>
  * byte[] bytes = c.serialize();<br>
  * </code>
@@ -40,18 +40,19 @@ public class CompositeType extends AbstractType {
 
 	@Override
 	public void validate(byte[] bytes) {
-		if (!CompositeTypeUtils.validate(bytes)) {
+		if (!Composite.validate(bytes)) {
 			throw new MarshalException("Not a composite type or incorrect composite type version");
 		}
 	}
 
 	@Override
 	public String getString(byte[] bytes) {
-		return CompositeTypeUtils.toString(bytes);
+		Composite c = new Composite(bytes);
+		return c.toString();
 	}
 
 	public int compare(byte[] o1, byte[] o2) {
-		return CompositeTypeUtils.compare(o1, o2);
+		return Composite.compare(o1, o2);
 	}
 
 }
