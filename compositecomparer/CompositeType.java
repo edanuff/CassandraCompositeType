@@ -3,6 +3,7 @@ package compositecomparer;
 import java.util.logging.Logger;
 
 import org.apache.cassandra.db.marshal.AbstractType;
+import org.apache.cassandra.db.marshal.MarshalException;
 
 /**
  * CompositeType comparer for Cassandra columns.
@@ -38,8 +39,15 @@ public class CompositeType extends AbstractType {
 			.getLogger(CompositeType.class.getName());
 
 	@Override
+	public void validate(byte[] bytes) {
+		if (!CompositeTypeUtils.validate(bytes)) {
+			throw new MarshalException("Not a composite type or incorrect composite type version");
+		}
+	}
+
+	@Override
 	public String getString(byte[] bytes) {
-		return CompositeTypeUtils.getString(bytes);
+		return CompositeTypeUtils.toString(bytes);
 	}
 
 	public int compare(byte[] o1, byte[] o2) {

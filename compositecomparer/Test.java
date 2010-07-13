@@ -27,38 +27,39 @@ public class Test {
 		try {
 			CompositeType comparer = new CompositeType();
 
-			CompositeTypeBuilder builder = new CompositeTypeBuilder();
-			builder.addUTF8("smith").addUTF8("bob").addLong(System.currentTimeMillis());
-			byte[] o1 = builder.getBytes();
+			CompositeTypeCollection c = new CompositeTypeCollection();
+			c.addUTF8("smith").addUTF8("bob").addLong(System.currentTimeMillis());
+			byte[] o1 = c.serialize();
+			logger.info(CompositeTypeUtils.toString(o1));
 			
 			logger.info(comparer.getString(o1) + " is encoded as " + FBUtilities.bytesToHex(o1));
 
-			builder = new CompositeTypeBuilder();
-			builder.addAscii("hello").addLong(256);
-			byte[] o2 = builder.getBytes();
+			c = new CompositeTypeCollection();
+			c.addAscii("hello").addLong(256);
+			byte[] o2 = c.serialize();
 
 			logCompare(comparer, o1, o2);
 
 			UUID u1 = getTimeUUID();
 
-			builder = new CompositeTypeBuilder();
-			builder.addTimeUUID(u1).addLong(256);
-			o1 = builder.getBytes();
+			c = new CompositeTypeCollection();
+			c.addTimeUUID(u1).addLong(256);
+			o1 = c.serialize();
 
 			u1 = getTimeUUID();
-			builder = new CompositeTypeBuilder();
-			builder.addTimeUUID(u1).addLong(256);
-			o2 = builder.getBytes();
+			c = new CompositeTypeCollection();
+			c.addTimeUUID(u1).addLong(256);
+			o2 = c.serialize();
 
 			logCompare(comparer, o1, o2);
 
-			builder = new CompositeTypeBuilder();
-			builder.addLong(256);
-			o1 = builder.getBytes();
+			c = new CompositeTypeCollection();
+			c.addLong(256);
+			o1 = c.serialize();
 
-			builder = new CompositeTypeBuilder();
-			builder.addLong(256);
-			o2 = builder.getBytes();
+			c = new CompositeTypeCollection();
+			c.addLong(256);
+			o2 = c.serialize();
 
 			logCompare(comparer, o1, o2);
 

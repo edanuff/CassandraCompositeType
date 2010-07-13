@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -45,108 +46,19 @@ public class CompositeTypeUtils {
 
 	public static final String ASCII_ENCODING = "US-ASCII";
 
-	public static String getString(byte[] bytes) {
+	public static String toString(byte[] bytes) {
 
 		// System.out.println("column name bytes: "
 		// + getBytesString(bytes, 0, bytes.length));
 
-		if ((bytes == null) || (bytes.length == 0))
+		CompositeTypeCollection c = new CompositeTypeCollection(bytes);
+		Iterator<Object> iter = c.iterator();
+		if (!iter.hasNext())
 			return "";
-
-		if ((bytes[0] & 0xFF) != COMPOSITETYPE_ID) {
-			throw new MarshalException("Not a composite type");
-		}
-
-		if ((bytes[1] & 0xFF) != COMPOSITETYPE_VERSION) {
-			throw new MarshalException(
-					"Incorrect composite type version for this deserializer, expected "
-							+ COMPOSITETYPE_VERSION + ", found "
-							+ (bytes[1] & 0xFF));
-		}
-
-		StringBuilder result = new StringBuilder();
-
-		int offset = 2;
-		int len = 0;
-		int type = 0;
-
-		while (true) {
-			type = bytes[offset] & 0xff;
-			// System.out.println(type);
-
-			switch (type) {
-			case COMPONENT_BYTES:
-				len = getShort(bytes, offset + 1);
-				// System.out.println(len);
-				result.append(getHexString(bytes, offset + 3, len));
-				offset += len + 3;
-				break;
-
-			case COMPONENT_ASCII:
-				len = getShort(bytes, offset + 1);
-				// System.out.println(len);
-				try {
-					result.append(new String(bytes, offset + 3, len,
-							ASCII_ENCODING));
-				} catch (UnsupportedEncodingException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				offset += len + 3;
-				break;
-
-			case COMPONENT_UTF8:
-				len = getShort(bytes, offset + 1);
-				// System.out.println(len);
-				try {
-					result.append(new String(bytes, offset, len + 3,
-							UTF8_ENCODING));
-				} catch (UnsupportedEncodingException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				offset += len + 3;
-				break;
-
-			case COMPONENT_BOOL:
-				result.append(getBool(bytes, offset + 1));
-				offset += 1;
-				break;
-
-			case COMPONENT_LONG:
-				result.append(ByteBuffer.wrap(bytes, offset + 1, 8).getLong());
-				offset += 9;
-				break;
-
-			case COMPONENT_LEXICALUUID:
-			case COMPONENT_TIMEUUID:
-				result.append(getUUID(bytes, offset + 1));
-				offset += 17;
-				break;
-
-			case COMPONENT_MINIMUM:
-				result.append("MIN");
-				offset += 1;
-				break;
-
-			case COMPONENT_MAXIMUM:
-				result.append("MAX");
-				offset += 1;
-				break;
-
-			default:
-				throw new MarshalException("Unknown embedded type at offset: "
-						+ offset + " parsed " + result.toString());
-			}
-
-			if (bytes.length <= offset) {
-				break;
-			}
-
-			result.append(",");
-		}
-
-		return result.toString();
+		StringBuilder builder = new StringBuilder(String.valueOf(iter.next()));
+		while (iter.hasNext())
+			builder.append(',').append(String.valueOf(iter.next()));
+		return builder.toString();
 	}
 
 	public static int compare(byte[] o1, byte[] o2) {
@@ -374,13 +286,80 @@ public class CompositeTypeUtils {
 
 	}
 
-	public static Object[] deserialize(byte[] bytes) {
+	public static Object deserializeBytesAt(byte[] bytes, int[] offsetRef) {
+		Object result = null;
+		int len = 0;
+		int offset = offsetRef[0];
+		int type = bytes[offset] & 0xff;
+		// System.out.println(type);
+
+		switch (type) {
+		case COMPONENT_BYTES:
+			len = getShort(bytes, offset + 1);
+			byte[] b = new byte[len];
+			System.arraycopy(bytes, offset + 3, b, 0, len);
+			result = b;
+			offset += len + 3;
+			break;
+
+		case COMPONENT_ASCII:
+			len = getShort(bytes, offset + 1);
+			try {
+				result = new String(bytes, offset + 3, len, ASCII_ENCODING);
+			} catch (UnsupportedEncodingException e) {
+				throw new RuntimeException(e);
+			}
+			offset += len + 3;
+			break;
+
+		case COMPONENT_UTF8:
+			len = getShort(bytes, offset + 1);
+			try {
+				result = new String(bytes, offset + 3, len, UTF8_ENCODING);
+			} catch (UnsupportedEncodingException e) {
+				throw new RuntimeException(e);
+			}
+			offset += len + 3;
+			break;
+
+		case COMPONENT_LONG:
+			result = ByteBuffer.wrap(bytes, offset + 1, 8).getLong();
+			offset += 9;
+			break;
+
+		case COMPONENT_LEXICALUUID:
+		case COMPONENT_TIMEUUID:
+			result = getUUID(bytes, offset + 1);
+			offset += 17;
+			break;
+
+		case COMPONENT_MINIMUM:
+			result = Integer.MIN_VALUE;
+			offset += 1;
+			break;
+
+		case COMPONENT_MAXIMUM:
+			result = Integer.MAX_VALUE;
+			offset += 1;
+			break;
+
+		default:
+			throw new MarshalException("Unknown embedded type at offset: "
+					+ offset);
+		}
+
+		offsetRef[0] = offset;
+		return result;
+
+	}
+
+	public static List<Object> deserialize(byte[] bytes) {
 		// System.out.println("column name bytes: "
 		// + getBytesString(bytes, 0, bytes.length));
 		List<Object> results = new ArrayList<Object>();
 
 		if ((bytes == null) || (bytes.length == 0))
-			return results.toArray();
+			return results;
 
 		if ((bytes[0] & 0xFF) != COMPOSITETYPE_ID) {
 			throw new MarshalException("Not a composite type");
@@ -394,67 +373,12 @@ public class CompositeTypeUtils {
 		}
 
 		int offset = 2;
-		int len = 0;
-		int type = 0;
+		int[] offsetRef = new int[1];
 
 		while (true) {
-			type = bytes[offset] & 0xff;
-			// System.out.println(type);
-
-			switch (type) {
-			case COMPONENT_BYTES:
-				len = getShort(bytes, offset + 1);
-				results.add(getHexString(bytes, offset + 3, len));
-				offset += len + 3;
-				break;
-
-			case COMPONENT_ASCII:
-				len = getShort(bytes, offset + 1);
-				try {
-					results.add(new String(bytes, offset + 3, len,
-							ASCII_ENCODING));
-				} catch (UnsupportedEncodingException e) {
-					throw new RuntimeException(e);
-				}
-				offset += len + 3;
-				break;
-
-			case COMPONENT_UTF8:
-				len = getShort(bytes, offset + 1);
-				try {
-					results.add(new String(bytes, offset + 3, len,
-							UTF8_ENCODING));
-				} catch (UnsupportedEncodingException e) {
-					throw new RuntimeException(e);
-				}
-				offset += len + 3;
-				break;
-
-			case COMPONENT_LONG:
-				results.add(ByteBuffer.wrap(bytes, offset + 1, 8).getLong());
-				offset += 9;
-				break;
-
-			case COMPONENT_LEXICALUUID:
-			case COMPONENT_TIMEUUID:
-				results.add(getUUID(bytes, offset + 1));
-				offset += 17;
-				break;
-
-			case COMPONENT_MINIMUM:
-				results.add(Integer.MIN_VALUE);
-				offset += 1;
-				break;
-
-			case COMPONENT_MAXIMUM:
-				results.add(Integer.MAX_VALUE);
-				offset += 1;
-				break;
-
-			default:
-				throw new MarshalException("Unknown embedded type at offset: "
-						+ offset + " parsed " + results.size() + " components");
-			}
+			offsetRef[0] = offset;
+			results.add(deserializeBytesAt(bytes, offsetRef));
+			offset = offsetRef[0];
 
 			if (bytes.length <= offset) {
 				break;
@@ -462,31 +386,42 @@ public class CompositeTypeUtils {
 
 		}
 
-		return results.toArray();
+		return results;
+	}
+	
+	public static boolean validate(byte[] bytes) {
+		if ((bytes != null) && (bytes.length > 0)) {
+			if ((bytes[0] & 0xFF) != COMPOSITETYPE_ID) {
+				return false;
+			}
+	
+			if ((bytes[1] & 0xFF) != COMPOSITETYPE_VERSION) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public static byte[] serialize(Object... objects) throws IOException {
-		CompositeTypeBuilder builder = new CompositeTypeBuilder();
+		CompositeTypeCollection c = new CompositeTypeCollection();
 		for (Object obj : objects) {
 			if (obj instanceof Long)
-				builder.addLong(((Long) obj).longValue());
+				c.addLong(((Long) obj).longValue());
 			else if (obj instanceof Boolean) {
-				builder.addBool(((Boolean) obj).booleanValue());
-			}
-			else if (obj instanceof String) {
-				builder.addUTF8((String) obj);
-			}
-			else if (obj instanceof UUID) {
+				c.addBool(((Boolean) obj).booleanValue());
+			} else if (obj instanceof String) {
+				c.addUTF8((String) obj);
+			} else if (obj instanceof UUID) {
 				if (isTimeBased((UUID) obj)) {
-					builder.addTimeUUID((UUID) obj);
+					c.addTimeUUID((UUID) obj);
 				} else {
-					builder.addLexicalUUID((UUID) obj);
+					c.addLexicalUUID((UUID) obj);
 				}
 			} else if (obj instanceof byte[]) {
-				builder.addBytes((byte[]) obj);
+				c.addBytes((byte[]) obj);
 			}
 		}
-		return builder.getBytes();
+		return c.serialize();
 	}
 
 	static boolean isTimeBased(UUID uuid) {

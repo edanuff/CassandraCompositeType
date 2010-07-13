@@ -23,9 +23,9 @@ To use this, you must specify the comparer in your storage-conf.xml file:
 
 To construct a composite name for a new column, use the following:
 
-CompositeTypeBuilder builder = new CompositeTypeBuilder();
-builder.addUTF8("smith").addUTF8("bob").addLong(System.currentTimeMillis());
-byte[] column_name = builder.getBytes();
+CompositeTypeCollection c = new CompositeTypeCollection();
+c.addUTF8("smith").addUTF8("bob").addLong(System.currentTimeMillis());
+byte[] column_name = c.serialize();
 
 A convenience method is provided as well, although it makes certain assumptions
 that you might want to very are applicable.  You use it like this:
