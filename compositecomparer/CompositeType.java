@@ -22,9 +22,9 @@ import org.apache.cassandra.db.marshal.MarshalException;
  * To construct a composite name for a new column, use the following:
  * <p>
  * <code>
- * CompositeTypeBuilder builder = new CompositeTypeBuilder();<br>
- * builder.addUTF8("smith").addUTF8("bob").addLexicalUUID(new UUID());<br>
- * byte[] bytes = builder.getBytes();<br>
+ * CompositeTypeCollection c = new CompositeTypeCollection();<br>
+ * c.addUTF8("smith").addUTF8("bob").addLexicalUUID(new UUID());<br>
+ * byte[] bytes = c.serialize();<br>
  * </code>
  * <p>
  * The actual composite type consists of 1 byte to specify the component type,
