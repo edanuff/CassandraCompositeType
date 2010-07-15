@@ -1,6 +1,6 @@
 CompositeType for Cassandra
 
-For a more detailed description of how this might be use, please read:
+For a more detailed description of how this might be used, please read:
 
 http://www.anuff.com/2010/07/secondary-indexes-in-cassandra.html
 
