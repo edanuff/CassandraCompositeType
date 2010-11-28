@@ -1,5 +1,6 @@
 package compositecomparer;
 
+import java.nio.ByteBuffer;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -13,7 +14,8 @@ public class Test {
 		return java.util.UUID.fromString(new com.eaio.uuid.UUID().toString());
 	}
 
-	public static void logCompare(CompositeType comparer, byte[] o1, byte[] o2) {
+	public static void logCompare(CompositeType comparer, ByteBuffer o1,
+			ByteBuffer o2) {
 		int c = comparer.compare(o1, o2);
 		logger.info(comparer.getString(o1)
 				+ (c > 0 ? " > " : c < 0 ? " < " : " = ")
@@ -24,16 +26,25 @@ public class Test {
 
 		CompositeType comparer = new CompositeType();
 
+		// Create and serialize composite value
+
 		Composite c = new Composite("smith", "bob", System.currentTimeMillis());
-		byte[] o1 = c.serialize();
+		ByteBuffer o1 = c.serializeToByteBuffer();
 		logger.info(c.toString());
 
 		logger.info(comparer.getString(o1) + " is encoded as "
 				+ FBUtilities.bytesToHex(o1));
 
+		// Deserialize composite value
+
+		c = new Composite(o1);
+		logger.info(c.toString());
+
+		// Test comparisons
+
 		c = new Composite();
 		c.addAscii("hello").addLong(256);
-		byte[] o2 = c.serialize();
+		ByteBuffer o2 = c.serializeToByteBuffer();
 
 		logCompare(comparer, o1, o2);
 
@@ -41,21 +52,21 @@ public class Test {
 
 		c = new Composite();
 		c.addTimeUUID(u1).addLong(256);
-		o1 = c.serialize();
+		o1 = c.serializeToByteBuffer();
 
 		u1 = getTimeUUID();
 		c = new Composite();
 		c.addTimeUUID(u1).addLong(256);
-		o2 = c.serialize();
+		o2 = c.serializeToByteBuffer();
 
 		logCompare(comparer, o1, o2);
 
 		c = new Composite(256);
-		o1 = c.serialize();
+		o1 = c.serializeToByteBuffer();
 
 		c = new Composite();
 		c.addLong(256);
-		o2 = c.serialize();
+		o2 = c.serializeToByteBuffer();
 
 		logCompare(comparer, o1, o2);
 

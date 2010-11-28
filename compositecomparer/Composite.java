@@ -19,9 +19,8 @@ import org.apache.cassandra.db.marshal.MarshalException;
 /**
  * Composite type for Cassandra columns.
  * <p>
- * Composite allows you to combine the existing Cassandra
- * types into a composite type that will then be compared correctly for each of
- * the component types.
+ * Composite allows you to combine the existing Cassandra types into a composite
+ * type that will then be compared correctly for each of the component types.
  * <p>
  * To construct a composite name for a new column, use the following:
  * <p>
@@ -39,64 +38,159 @@ import org.apache.cassandra.db.marshal.MarshalException;
 
 public class Composite implements Collection<Object>, Comparable<Composite> {
 
-	public final static int COMPOSITETYPE_ID = 0xED;
+	/**
+	 * Byte id code to help detect byte stream contains serialized Composite
+	 * value.
+	 */
+	public final static int COMPOSITETYPE_ID_0 = 'C';
+	public final static int COMPOSITETYPE_ID_1 = 'M';
+	public final static int COMPOSITETYPE_ID_2 = 'P';
 
+	public final static int FIRST_BYTE_OFFSET = 4;
+
+	public final static int MIN_BYTE_COUNT = 5;
+
+	/**
+	 * Byte version number of Composite format.
+	 */
 	public final static int COMPOSITETYPE_VERSION = 1;
 
-	public final static int COMPONENT_MINIMUM = 0;
+	/**
+	 * Component id for placeholder matching the minimum possible value
+	 */
+	public final static int COMPONENT_STOP = 0;
 
-	public final static int COMPONENT_BOOL = 1;
+	/**
+	 * Component id for placeholder matching the minimum possible value
+	 */
+	public final static int COMPONENT_MINIMUM = 1;
 
-	public final static int COMPONENT_LONG = 2;
+	/**
+	 * Component id for boolean values
+	 */
+	public final static int COMPONENT_BOOL = 2;
 
-	public final static int COMPONENT_TIMEUUID = 3;
+	/**
+	 * Component id for long values
+	 */
+	public final static int COMPONENT_LONG = 3;
 
-	public final static int COMPONENT_LEXICALUUID = 4;
+	/**
+	 * Component id for real values
+	 */
+	public final static int COMPONENT_REAL = 4;
 
-	public final static int COMPONENT_ASCII = 5;
+	/**
+	 * Component id for timeuuid values
+	 */
+	public final static int COMPONENT_TIMEUUID = 5;
 
-	public final static int COMPONENT_UTF8 = 6;
+	/**
+	 * Component id for lexical uuid values
+	 */
+	public final static int COMPONENT_LEXICALUUID = 6;
 
-	public final static int COMPONENT_BYTES = 7;
+	/**
+	 * Component id for ascii character strings
+	 */
+	public final static int COMPONENT_ASCII = 7;
 
+	/**
+	 * Component id for utf8 encoded strings
+	 */
+	public final static int COMPONENT_UTF8 = 8;
+
+	/**
+	 * Component id for byte array values
+	 */
+	public final static int COMPONENT_BYTES = 9;
+
+	/**
+	 * Component id for place holder matching the maximum possible value.
+	 */
 	public final static int COMPONENT_MAXIMUM = 255;
 
+	/**
+	 * UTF8 string encoding
+	 */
 	public static final String UTF8_ENCODING = "UTF-8";
 
+	/**
+	 * ASCII string encoding
+	 */
 	public static final String ASCII_ENCODING = "US-ASCII";
 
 	static final Logger logger = Logger.getLogger(Composite.class.getName());
 
+	/**
+	 * Convenience instance of minimum matching place holder
+	 */
+	public static Placeholder MATCH_MINIMUM = new Placeholder(COMPONENT_MINIMUM);
+
+	/**
+	 * Convenience instance of maximum matching place holder
+	 */
+	public static Placeholder MATCH_MAXIMUM = new Placeholder(COMPONENT_MAXIMUM);
+
+	/**
+	 * The Class Placeholder.
+	 * 
+	 * @author edanuff
+	 */
+	public static class Placeholder {
+		int type;
+
+		private Placeholder(int type) {
+			this.type = type;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (o instanceof Placeholder) {
+				return type == ((Placeholder) o).type;
+			}
+			return false;
+		}
+	}
+
+	int startOffset;
 	byte[] bytes;
 	ByteArrayOutputStream byteStream;
 	DataOutputStream out;
 
+	/**
+	 * 
+	 */
 	public Composite() {
 	}
 
+	/**
+	 * @param bytes
+	 */
 	public Composite(byte[] bytes) {
 		this.bytes = bytes;
 	}
 
+	public Composite(ByteBuffer buffer) {
+		bytes = buffer.array();
+		startOffset = buffer.arrayOffset() + buffer.position();
+	}
+
+	/**
+	 * @param objects
+	 */
 	public Composite(Object... objects) {
 		for (Object obj : objects) {
-			if (obj instanceof Long) {
-				addLong(((Long) obj).longValue());
-			} else if (obj instanceof Integer) {
-				addLong(((Integer) obj).intValue());
-			} else if (obj instanceof Boolean) {
-				addBool(((Boolean) obj).booleanValue());
-			} else if (obj instanceof String) {
-				addUTF8((String) obj);
-			} else if (obj instanceof UUID) {
-				if (isTimeBased((UUID) obj)) {
-					addTimeUUID((UUID) obj);
-				} else {
-					addLexicalUUID((UUID) obj);
-				}
-			} else if (obj instanceof byte[]) {
-				addBytes((byte[]) obj);
-			}
+			add(obj);
+		}
+	}
+
+	/**
+	 * @param objects
+	 */
+	public Composite(List<Object> objects) {
+		for (Object obj : objects) {
+			add(obj);
 		}
 	}
 
@@ -106,18 +200,18 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 			out = new DataOutputStream(byteStream);
 			if (bytes == null) {
 				try {
-					out.write(COMPOSITETYPE_ID);
+					out.write(COMPOSITETYPE_ID_0);
+					out.write(COMPOSITETYPE_ID_1);
+					out.write(COMPOSITETYPE_ID_2);
 					out.write(COMPOSITETYPE_VERSION);
 				} catch (IOException e) {
-					logger.throwing("CompositeTypeCollection",
-							"initOutputStream", e);
+					logger.throwing("Composite", "initOutputStream", e);
 				}
 			} else {
 				try {
 					out.write(bytes);
 				} catch (IOException e) {
-					logger.throwing("CompositeTypeCollection",
-							"initOutputStream", e);
+					logger.throwing("Composite", "initOutputStream", e);
 				}
 			}
 		}
@@ -125,35 +219,62 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 
 	private void pack() {
 		if (byteStream != null) {
+			try {
+				out.write(COMPONENT_STOP);
+			} catch (IOException e) {
+				logger.throwing("Composite", "pack", e);
+			}
 			bytes = byteStream.toByteArray();
 			byteStream = null;
 			out = null;
 		}
 	}
 
+	@Override
 	public String toString() {
 		Iterator<Object> iter = iterator();
-		if (!iter.hasNext())
+		if (!iter.hasNext()) {
 			return "";
+		}
 		StringBuilder builder = new StringBuilder(stringValueOf(iter.next()));
-		while (iter.hasNext())
+		while (iter.hasNext()) {
 			builder.append(',').append(stringValueOf(iter.next()));
+		}
 		return builder.toString();
 	}
 
 	private static String stringValueOf(Object o) {
-		if (o instanceof byte[])
+		if (o instanceof byte[]) {
 			return getHexString((byte[]) o, 0, ((byte[]) o).length);
+		}
 		return String.valueOf(o);
 	}
 
+	/**
+	 * @param obj
+	 * @return true if object is a valid Entity property or property type
+	 */
+	public static boolean isValidType(Object obj) {
+		return (obj instanceof UUID) || (obj instanceof String)
+				|| (obj instanceof Long) || (obj instanceof Integer)
+				|| (obj instanceof Double) || (obj instanceof Float)
+				|| (obj instanceof Boolean) || (obj instanceof byte[]);
+	}
+
+	@Override
 	public boolean add(Object o) {
 		if (o == null) {
-			throw new NullPointerException();
+			return false;
 		}
-		if (o instanceof Long)
+		if (o instanceof Long) {
 			addLong(((Long) o).longValue());
-		else if (o instanceof Boolean) {
+		} else if (o instanceof Integer) {
+			addLong(((Integer) o).intValue());
+		} else if (o instanceof Double) {
+			addReal(((Double) o).doubleValue());
+		} else if (o instanceof Float) {
+			addReal(((Float) o).doubleValue());
+		} else if (o instanceof Boolean) {
 			addBool(((Boolean) o).booleanValue());
 		} else if (o instanceof String) {
 			addUTF8((String) o);
@@ -165,6 +286,14 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 			}
 		} else if (o instanceof byte[]) {
 			addBytes((byte[]) o);
+		} else if (o instanceof Placeholder) {
+			if (MATCH_MAXIMUM.equals(o)) {
+				addMatchMaximum();
+			} else if (MATCH_MINIMUM.equals(o)) {
+				addMatchMinimum();
+			}
+		} else if (o instanceof Collection<?>) {
+			addAll((Collection<?>) o);
 		} else {
 			throw new ClassCastException();
 		}
@@ -172,6 +301,7 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 		return true;
 	}
 
+	@Override
 	public boolean addAll(Collection<? extends Object> c) {
 		for (Iterator<? extends Object> iter = c.iterator(); iter.hasNext();) {
 			add(iter.next());
@@ -275,6 +405,24 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 	}
 
 	/**
+	 * Adds the provided real value to the composite type being built.
+	 * 
+	 * @param val
+	 *            the component part to append as a real value
+	 * @return the composite type builder for chained invocation
+	 */
+	public Composite addReal(Double val) {
+		initOutputStream();
+		try {
+			out.write(COMPONENT_REAL);
+			out.writeDouble(val);
+		} catch (IOException e) {
+			// IOException is never thrown by ByteArrayOutputStream
+		}
+		return this;
+	}
+
+	/**
 	 * Adds the time-based UUID to the composite type being built.
 	 * 
 	 * @param uuid
@@ -312,6 +460,9 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 		return this;
 	}
 
+	/**
+	 * @return composite value, for chaining method calls
+	 */
 	public Composite addMatchMinimum() {
 		initOutputStream();
 		try {
@@ -322,6 +473,9 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 		return this;
 	}
 
+	/**
+	 * @return composite value, for chaining method calls
+	 */
 	public Composite addMatchMaximum() {
 		initOutputStream();
 		try {
@@ -332,78 +486,85 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 		return this;
 	}
 
+	@Override
 	public void clear() {
-		this.bytes = null;
-		this.byteStream = null;
-		this.out = null;
+		bytes = null;
+		byteStream = null;
+		out = null;
 	}
 
+	@Override
 	public boolean contains(Object o) {
 		for (Iterator<? extends Object> iter = iterator(); iter.hasNext();) {
 			Object obj = iter.next();
-			if (obj.equals(o))
+			if (obj.equals(o)) {
 				return true;
+			}
 		}
 		return false;
 	}
 
+	@Override
 	public boolean containsAll(Collection<?> c) {
 		for (Iterator<? extends Object> iter = c.iterator(); iter.hasNext();) {
 			Object obj = iter.next();
-			if (!contains(obj))
+			if (!contains(obj)) {
 				return false;
+			}
 		}
 		return true;
 	}
 
+	@Override
 	public boolean isEmpty() {
 		pack();
-		if ((bytes != null) && (bytes.length > 2))
+		if ((bytes != null) && (bytes.length > startOffset + FIRST_BYTE_OFFSET)) {
 			return false;
+		}
 		return true;
 	}
 
+	@Override
 	public Iterator<Object> iterator() {
 		pack();
-		return new CompositeTypeIterator(this, bytes);
+		return new CompositeTypeIterator(this, startOffset, bytes);
 	}
 
 	class CompositeTypeIterator implements Iterator<Object> {
 
 		Composite collection;
+		int start = 0;
 		byte[] bytes;
 		int offset = 0;
 		int len = 0;
 		int type = 0;
 
-		CompositeTypeIterator(Composite c, byte[] bytes) {
-			this.collection = c;
+		CompositeTypeIterator(Composite c, int start, byte[] bytes) {
+			collection = c;
+			this.start = start;
 			this.bytes = bytes;
+			offset = start;
 		}
 
+		@Override
 		public boolean hasNext() {
-			if (offset == 0) {
-				if ((bytes == null) || (bytes.length == 0))
+			if (offset == start) {
+				if ((bytes == null) || (bytes.length == start)) {
 					return false;
-
-				if ((bytes[0] & 0xFF) != COMPOSITETYPE_ID) {
-					throw new MarshalException("Not a composite type");
 				}
 
-				if ((bytes[1] & 0xFF) != COMPOSITETYPE_VERSION) {
-					throw new MarshalException(
-							"Incorrect composite type version for this deserializer, expected "
-									+ COMPOSITETYPE_VERSION + ", found "
-									+ (bytes[1] & 0xFF));
-				}
-				offset = 2;
+				validate(start, bytes, true);
+
+				offset = start + FIRST_BYTE_OFFSET;
 			}
-			return offset < bytes.length;
+			return ((offset < bytes.length) && (bytes[offset] != COMPONENT_STOP));
 		}
 
+		@Override
 		public Object next() {
-			if (!hasNext())
+			if (!hasNext()) {
 				throw new NoSuchElementException();
+			}
 			int[] offsetRef = new int[1];
 			offsetRef[0] = offset;
 			Object obj = deserializeBytesAt(bytes, offsetRef);
@@ -411,45 +572,59 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 			return obj;
 		}
 
+		@Override
 		public void remove() {
 			throw new UnsupportedOperationException();
 		}
 
 	}
 
+	@Override
 	public boolean remove(Object o) {
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public boolean removeAll(Collection<?> c) {
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public boolean retainAll(Collection<?> c) {
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public int size() {
 		pack();
 		List<Object> objects = deserialize(bytes);
 		return objects.size();
 	}
 
+	@Override
 	public Object[] toArray() {
 		pack();
 		List<Object> objects = deserialize(bytes);
 		return objects.toArray();
 	}
 
+	@Override
 	public <T> T[] toArray(T[] a) {
 		pack();
 		List<Object> objects = deserialize(bytes);
 		return objects.toArray(a);
 	}
 
+	/**
+	 * @return byte array serialized form
+	 */
 	public byte[] serialize() {
 		pack();
 		return bytes;
+	}
+
+	public ByteBuffer serializeToByteBuffer() {
+		return ByteBuffer.wrap(serialize());
 	}
 
 	private static byte[] bytes(UUID uuid) {
@@ -480,42 +655,61 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 		}
 	}
 
+	@Override
 	public int compareTo(Composite o) {
 		pack();
 		return compare(serialize(), o.serialize());
 	}
 
+	/**
+	 * @param c1
+	 * @param c2
+	 * @return comparison value, -1 for less than, 0 for equals, 1 for greater
+	 *         than
+	 */
 	public static int compare(Composite c1, Composite c2) {
 		return compare(c1.serialize(), c2.serialize());
 	}
 
 	public static int compare(byte[] o1, byte[] o2) {
+		return compare(0, o1, 0, o2);
+	}
 
-		if ((o1 == null) || (o1.length == 0)) {
-			return ((o2 == null) || (o2.length == 0)) ? 0 : -1;
+	public static int compare(ByteBuffer b1, ByteBuffer b2) {
+		if ((b1 == null) || (b1.remaining() == 0)) {
+			return ((b2 == null) || (b2.remaining() == 0)) ? 0 : -1;
 		}
-		if ((o2 == null) || (o2.length == 0)) {
+		if ((b2 == null) || (b2.remaining() == 0)) {
+			return 1;
+		}
+		return compare(b1.arrayOffset() + b1.position(), b1.array(),
+				b2.arrayOffset() + b2.position(), b2.array());
+	}
+
+	/**
+	 * @param o1
+	 * @param o2
+	 * @return comparison value, -1 for less than, 0 for equals, 1 for greater
+	 */
+	public static int compare(int s1, byte[] o1, int s2, byte[] o2) {
+
+		if ((o1 == null) || (o1.length == s1)) {
+			return ((o2 == null) || (o2.length == s2)) ? 0 : -1;
+		}
+		if ((o2 == null) || (o2.length == s2)) {
 			return 1;
 		}
 
-		if (((o1[0] & 0xFF) != COMPOSITETYPE_ID)
-				|| ((o2[0] & 0xFF) != COMPOSITETYPE_ID)) {
-			throw new MarshalException("Not a composite type");
-		}
-
-		if (((o1[1] & 0xFF) != COMPOSITETYPE_VERSION)
-				|| ((o2[1] & 0xFF) != COMPOSITETYPE_VERSION)) {
-			throw new MarshalException(
-					"Incorrect composite type version for this comparer");
-		}
+		validate(s1, o1, true);
+		validate(s2, o2, true);
 
 		int comp = 0;
 
-		int offset1 = 2;
+		int offset1 = s1 + FIRST_BYTE_OFFSET;
 		int len1 = 0;
 		int type1 = 0;
 
-		int offset2 = 2;
+		int offset2 = s2 + FIRST_BYTE_OFFSET;
 		int len2 = 0;
 		int type2 = 0;
 
@@ -525,6 +719,10 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 
 			if (type1 != type2) {
 				return type1 < type2 ? -1 : 1;
+			}
+
+			if (type1 == 0) {
+				return 0;
 			}
 
 			switch (type1) {
@@ -558,6 +756,12 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 				offset2 += 9;
 				break;
 
+			case COMPONENT_REAL:
+				comp = compareReal(o1, offset1 + 1, o2, offset2 + 1);
+				offset1 += 9;
+				offset2 += 9;
+				break;
+
 			case COMPONENT_LEXICALUUID:
 				comp = compareLexicalUUID(o1, offset1 + 1, o2, offset2 + 1);
 				offset1 += 17;
@@ -579,8 +783,9 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 				throw new MarshalException("Unknown embedded type: " + type1);
 			}
 
-			if (comp != 0)
+			if (comp != 0) {
 				return comp;
+			}
 
 			if (o1.length <= offset1) {
 				return (o2.length <= offset2) ? 0 : -1;
@@ -601,10 +806,12 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 
 		boolean b1 = bytes1[offset1] != 0;
 		boolean b2 = bytes2[offset2] != 0;
-		if (!b1 && b2)
+		if (!b1 && b2) {
 			return -1;
-		if (b1 && !b2)
+		}
+		if (b1 && !b2) {
 			return 1;
+		}
 		return 0;
 	}
 
@@ -616,13 +823,22 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 		return Long.valueOf(L1).compareTo(Long.valueOf(L2));
 	}
 
+	private static int compareReal(byte[] bytes1, int offset1, byte[] bytes2,
+			int offset2) {
+
+		double L1 = ByteBuffer.wrap(bytes1, offset1, 8).getDouble();
+		double L2 = ByteBuffer.wrap(bytes2, offset2, 8).getDouble();
+		return Double.valueOf(L1).compareTo(Double.valueOf(L2));
+	}
+
 	private static String getHexString(byte[] bytes, int offset, int len) {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < len; i++) {
 			int bint = bytes[i + offset] & 0xff;
-			if (bint <= 0xF)
+			if (bint <= 0xF) {
 				// toHexString does not 0 pad its results.
 				sb.append("0");
+			}
 			sb.append(Integer.toHexString(bint));
 		}
 		return sb.toString();
@@ -631,39 +847,52 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 	private static int compareByteArrays(byte[] bytes1, int offset1, int len1,
 			byte[] bytes2, int offset2, int len2) {
 		if (null == bytes1) {
-			if (null == bytes2)
+			if (null == bytes2) {
 				return 0;
-			else
+			} else {
 				return -1;
+			}
 		}
-		if (null == bytes2)
+		if (null == bytes2) {
 			return 1;
+		}
 
-		if (len1 < 0)
+		if (len1 < 0) {
 			len1 = bytes1.length - offset1;
-		if (len2 < 0)
+		}
+		if (len2 < 0) {
 			len2 = bytes2.length - offset2;
+		}
 
 		int minLength = Math.min(len1, len2);
 		for (int i = 0; i < minLength; i++) {
 			int i1 = offset1 + i;
 			int i2 = offset2 + i;
-			if (bytes1[i1] == bytes2[i2])
+			if (bytes1[i1] == bytes2[i2]) {
 				continue;
+			}
 			// compare non-equal bytes as unsigned
 			return (bytes1[i1] & 0xFF) < (bytes2[i2] & 0xFF) ? -1 : 1;
 		}
-		if (len1 == len2)
+		if (len1 == len2) {
 			return 0;
-		else
+		} else {
 			return (len1 < len2) ? -1 : 1;
+		}
 	}
 
 	private static int compareUTF8(byte[] bytes1, int offset1, int len1,
 			byte[] bytes2, int offset2, int len2) {
 
-		return new String(bytes1, offset1, len1).compareTo(new String(bytes2,
-				offset2, len2));
+		String str1 = new String(bytes1, offset1, len1);
+		String str2 = new String(bytes2, offset2, len2);
+
+		/*
+		 * int c = str1.compareTo(str2); if (c < 0) { System.out.println(str1 +
+		 * " < " + str2); } else if (c > 0) { System.out.println(str1 + " > " +
+		 * str2); } else { System.out.println(str1 + " == " + str2); } return c;
+		 */
+		return str1.compareTo(str2);
 
 	}
 
@@ -684,29 +913,48 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 
 	}
 
-	private static long getUUIDTimestamp(byte[] bytes, int offset) {
-		long low = 0;
-		int mid = 0;
-		int hi = 0;
-
-		for (int i = 0; i < 4; i++)
-			low = (low << 8) | (bytes[i + offset] & 0xff);
-		for (int i = 4; i < 6; i++)
-			mid = (mid << 8) | (bytes[i + offset] & 0xff);
-		for (int i = 6; i < 8; i++)
-			hi = (hi << 8) | (bytes[i + offset] & 0xff);
-
-		return low + (mid << 32) + ((hi & 0x0FFF) << 48);
+	private static int compareTimestampBytes(byte[] o1, int i1, byte[] o2,
+			int i2) {
+		int d = (o1[i1 + 6] & 0xF) - (o2[i2 + 6] & 0xF);
+		if (d != 0) {
+			return d;
+		}
+		d = (o1[i1 + 7] & 0xFF) - (o2[i2 + 7] & 0xFF);
+		if (d != 0) {
+			return d;
+		}
+		d = (o1[i1 + 4] & 0xFF) - (o2[i2 + 4] & 0xFF);
+		if (d != 0) {
+			return d;
+		}
+		d = (o1[i1 + 5] & 0xFF) - (o2[i2 + 5] & 0xFF);
+		if (d != 0) {
+			return d;
+		}
+		d = (o1[i1] & 0xFF) - (o2[i2 + 0] & 0xFF);
+		if (d != 0) {
+			return d;
+		}
+		d = (o1[i1 + 1] & 0xFF) - (o2[i2 + 1] & 0xFF);
+		if (d != 0) {
+			return d;
+		}
+		d = (o1[i1 + 2] & 0xFF) - (o2[i2 + 2] & 0xFF);
+		if (d != 0) {
+			return d;
+		}
+		return (o1[i1 + 3] & 0xFF) - (o2[i2 + 3] & 0xFF);
 	}
 
 	private static int compareTimeUUID(byte[] bytes1, int offset1,
 			byte[] bytes2, int offset2) {
 
-		long t1 = getUUIDTimestamp(bytes1, offset1);
-		long t2 = getUUIDTimestamp(bytes2, offset2);
+		int res = compareTimestampBytes(bytes1, offset1, bytes2, offset2);
+		if (res != 0) {
+			return res;
+		}
 
-		return t1 < t2 ? -1 : (t1 > t2 ? 1 : compareByteArrays(bytes1, offset1,
-				16, bytes2, offset2, 16));
+		return compareByteArrays(bytes1, offset1, 16, bytes2, offset2, 16);
 
 	}
 
@@ -718,6 +966,9 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 		// System.out.println(type);
 
 		switch (type) {
+		case COMPONENT_STOP:
+			return null;
+
 		case COMPONENT_BYTES:
 			len = getShort(bytes, offset + 1);
 			byte[] b = new byte[len];
@@ -763,12 +1014,12 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 			break;
 
 		case COMPONENT_MINIMUM:
-			result = Long.MIN_VALUE;
+			result = MATCH_MINIMUM;
 			offset += 1;
 			break;
 
 		case COMPONENT_MAXIMUM:
-			result = Long.MAX_VALUE;
+			result = MATCH_MAXIMUM;
 			offset += 1;
 			break;
 
@@ -782,35 +1033,53 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 
 	}
 
+	/**
+	 * @param bytes
+	 * @return set of deserialized component objects
+	 */
 	public static List<Object> deserialize(byte[] bytes) {
+		return deserialize(0, bytes);
+	}
+
+	public static List<Object> deserialize(ByteBuffer bytes) {
+		if (bytes.remaining() == 0) {
+			return new ArrayList<Object>();
+		}
+		return deserialize(bytes.arrayOffset() + bytes.position(),
+				bytes.array());
+	}
+
+	public static List<Object> deserialize(int s, byte[] bytes) {
 		// System.out.println("column name bytes: "
 		// + getBytesString(bytes, 0, bytes.length));
 		List<Object> results = new ArrayList<Object>();
 
-		if ((bytes == null) || (bytes.length == 0))
+		if ((bytes == null) || (bytes.length == s)) {
 			return results;
-
-		if ((bytes[0] & 0xFF) != COMPOSITETYPE_ID) {
-			throw new MarshalException("Not a composite type");
 		}
 
-		if ((bytes[1] & 0xFF) != COMPOSITETYPE_VERSION) {
-			throw new MarshalException(
-					"Incorrect composite type version for this deserializer, expected "
-							+ COMPOSITETYPE_VERSION + ", found "
-							+ (bytes[1] & 0xFF));
-		}
+		validate(s, bytes, true);
 
-		int offset = 2;
+		int offset = s + FIRST_BYTE_OFFSET;
 		int[] offsetRef = new int[1];
 
 		while (true) {
 			offsetRef[0] = offset;
-			results.add(deserializeBytesAt(bytes, offsetRef));
+			Object obj = deserializeBytesAt(bytes, offsetRef);
+			if (obj == null) {
+				break;
+			}
+
+			results.add(obj);
 			offset = offsetRef[0];
 
-			if (bytes.length <= offset) {
+			if (bytes.length == offset) {
 				break;
+			}
+
+			if (bytes.length < offset) {
+				throw new MarshalException(
+						"Incorrect number of bytes, either value is corrupt or not composite type");
 			}
 
 		}
@@ -818,30 +1087,100 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 		return results;
 	}
 
-	public static boolean validate(byte[] bytes) {
-		if ((bytes != null) && (bytes.length > 0)) {
-			if ((bytes[0] & 0xFF) != COMPOSITETYPE_ID) {
+	/**
+	 * @param bytes
+	 * @return true if serialized component is value
+	 */
+	public static boolean validate(int start, byte[] bytes) {
+		return validate(start, bytes, false);
+	}
+
+	public static boolean validate(ByteBuffer buffer) {
+		if (buffer.remaining() == 0) {
+			return true;
+		}
+		return validate(buffer.arrayOffset() + buffer.position(),
+				buffer.array(), false);
+	}
+
+	public static boolean validate(ByteBuffer buffer, boolean throwException) {
+		if (buffer.remaining() == 0) {
+			return true;
+		}
+		return validate(buffer.arrayOffset() + buffer.position(),
+				buffer.array(), throwException);
+	}
+
+	public static boolean validate(int start, byte[] bytes,
+			boolean throwException) {
+		if ((bytes != null) && (bytes.length > (start + 4))) {
+
+			if ((bytes[start] & 0xFF) != COMPOSITETYPE_ID_0) {
+				if (throwException) {
+					throw new MarshalException(
+							"Not a composite type (ID byte 0 incorrect)");
+				}
 				return false;
 			}
 
-			if ((bytes[1] & 0xFF) != COMPOSITETYPE_VERSION) {
+			if ((bytes[start + 1] & 0xFF) != COMPOSITETYPE_ID_1) {
+				if (throwException) {
+					throw new MarshalException(
+							"Not a composite type (ID byte 1 incorrect)");
+				}
+				return false;
+			}
+
+			if ((bytes[start + 2] & 0xFF) != COMPOSITETYPE_ID_2) {
+				if (throwException) {
+					throw new MarshalException(
+							"Not a composite type (ID byte 2 incorrect)");
+				}
+				return false;
+			}
+
+			if ((bytes[start + 3] & 0xFF) != COMPOSITETYPE_VERSION) {
+				if (throwException) {
+					throw new MarshalException(
+							"Incorrect composite type version for this deserializer, expected "
+									+ COMPOSITETYPE_VERSION + ", found "
+									+ (bytes[start + 3] & 0xFF));
+				}
+
 				return false;
 			}
 		}
 		return true;
 	}
 
+	/**
+	 * @param objects
+	 * @return composite value as serialized byte array
+	 */
 	public static byte[] serialize(Object... objects) {
 		Composite c = new Composite(objects);
 		return c.serialize();
 	}
 
-	private static boolean isTimeBased(UUID uuid) {
-		try {
-			uuid.timestamp();
-			return true;
-		} catch (UnsupportedOperationException e) {
-		}
-		return false;
+	/**
+	 * @param objects
+	 * @return composite value as serialized byte array
+	 */
+	public static byte[] serialize(List<Object> objects) {
+		Composite c = new Composite(objects);
+		return c.serialize();
 	}
+
+	public static ByteBuffer serializeToByteBuffer(Object... objects) {
+		return ByteBuffer.wrap(serialize(objects));
+	}
+
+	public static ByteBuffer serializeToByteBuffer(List<Object> objects) {
+		return ByteBuffer.wrap(serialize(objects));
+	}
+
+	private static boolean isTimeBased(UUID uuid) {
+		return uuid.version() == 1;
+	}
+
 }

@@ -1,9 +1,9 @@
 package compositecomparer;
 
+import java.nio.ByteBuffer;
 import java.util.logging.Logger;
 
 import org.apache.cassandra.db.marshal.AbstractType;
-import org.apache.cassandra.db.marshal.MarshalException;
 
 /**
  * CompositeType comparer for Cassandra columns.
@@ -35,24 +35,34 @@ import org.apache.cassandra.db.marshal.MarshalException;
 
 public class CompositeType extends AbstractType {
 
+	/**
+	 * 
+	 */
+	public static final CompositeType instance = new CompositeType();
+
+	/**
+	 * 
+	 */
+	public CompositeType() {
+	}
+
 	static final Logger logger = Logger
 			.getLogger(CompositeType.class.getName());
 
 	@Override
-	public void validate(byte[] bytes) {
-		if (!Composite.validate(bytes)) {
-			throw new MarshalException("Not a composite type or incorrect composite type version");
-		}
+	public void validate(ByteBuffer buffer) {
+		Composite.validate(buffer, true);
 	}
 
 	@Override
-	public String getString(byte[] bytes) {
-		Composite c = new Composite(bytes);
+	public String getString(ByteBuffer buffer) {
+		Composite c = new Composite(buffer);
 		return c.toString();
 	}
 
-	public int compare(byte[] o1, byte[] o2) {
-		return Composite.compare(o1, o2);
+	@Override
+	public int compare(ByteBuffer b1, ByteBuffer b2) {
+		return Composite.compare(b1, b2);
 	}
 
 }
