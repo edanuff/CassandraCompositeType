@@ -70,6 +70,38 @@ public class Test {
 
 		logCompare(comparer, o1, o2);
 
+		c = new Composite(256);
+		o1 = c.serializeToByteBuffer();
+
+		c = new Composite(256, Composite.MATCH_MINIMUM);
+		o2 = c.serializeToByteBuffer();
+
+		logCompare(comparer, o1, o2);
+
+		c = new Composite(256, Composite.MATCH_MINIMUM);
+		o1 = c.serializeToByteBuffer();
+
+		c = new Composite(256, 0);
+		o2 = c.serializeToByteBuffer();
+
+		logCompare(comparer, o1, o2);
+
+		c = new Composite(256, 10);
+		o1 = c.serializeToByteBuffer();
+
+		c = new Composite(256, Composite.MATCH_MAXIMUM);
+		o2 = c.serializeToByteBuffer();
+
+		logCompare(comparer, o1, o2);
+
+		c = new Composite("alpha");
+		o1 = c.serializeToByteBuffer();
+
+		c = new Composite("beta");
+		o2 = c.serializeToByteBuffer();
+
+		logCompare(comparer, o1, o2);
+
 	}
 
 }
