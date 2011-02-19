@@ -4,6 +4,10 @@ For a more detailed description of how this might be used, please read:
 
 http://www.anuff.com/2010/07/secondary-indexes-in-cassandra.html
 
+For an example implemention of using it for indexing, see:
+
+https://github.com/edanuff/CassandraIndexedCollections
+
 Although Cassandra provides SuperColumns which allow you to have columns
 containing columns, it's often desirable to use regular columns and to
 be able to combine two or more ids into a sortable column name.  This
