@@ -1,3 +1,6 @@
+/*******************************************************************************
+ * Copyright 2010,2011 Ed Anuff and Usergrid, all rights reserved.
+ ******************************************************************************/
 package compositecomparer;
 
 import java.io.ByteArrayOutputStream;

@@ -6,9 +6,9 @@ import java.util.logging.Logger;
 
 import org.apache.cassandra.utils.FBUtilities;
 
-public class Test {
+public class Example {
 
-	private static final Logger logger = Logger.getLogger(Test.class.getName());
+	private static final Logger logger = Logger.getLogger(Example.class.getName());
 
 	public static java.util.UUID getTimeUUID() {
 		return java.util.UUID.fromString(new com.eaio.uuid.UUID().toString());
