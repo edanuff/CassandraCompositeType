@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -1181,6 +1182,33 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 
 	private static boolean isTimeBased(UUID uuid) {
 		return uuid.version() == 1;
+	}
+
+	@Override
+	public int hashCode() {
+		pack();
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + Arrays.hashCode(bytes);
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		Composite other = (Composite) obj;
+		if (!Arrays.equals(this.serialize(), other.serialize())) {
+			return false;
+		}
+		return true;
 	}
 
 }
