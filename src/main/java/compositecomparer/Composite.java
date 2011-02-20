@@ -152,6 +152,11 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 			}
 			return false;
 		}
+
+		@Override
+		public String toString() {
+			return "Placeholder(" + type + ")";
+		}
 	}
 
 	int startOffset;
@@ -719,10 +724,16 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 			type2 = o2[offset2] & 0xff;
 
 			if (type1 != type2) {
+				if ((type1 == COMPONENT_STOP) && (type2 == COMPONENT_MINIMUM)) {
+					return 1;
+				} else if ((type2 == COMPONENT_STOP)
+						&& (type1 == COMPONENT_MINIMUM)) {
+					return -1;
+				}
 				return type1 < type2 ? -1 : 1;
 			}
 
-			if (type1 == 0) {
+			if (type1 == COMPONENT_STOP) {
 				return 0;
 			}
 
@@ -788,11 +799,37 @@ public class Composite implements Collection<Object>, Comparable<Composite> {
 				return comp;
 			}
 
+			// these length checks should no longer happen now that
+			// composite types are zero-terminated with a COMPONENT_STOP token
+
+			// is o1 done?
 			if (o1.length <= offset1) {
-				return (o2.length <= offset2) ? 0 : -1;
+				// is o2 done
+				if (o2.length <= offset2) {
+					// if so, they're equal
+					return 0;
+				} else {
+					// check o2's next token
+					type2 = o2[offset2] & 0xff;
+					if (type2 == COMPONENT_MINIMUM) {
+						// if it's match_minimum, then it's always less,
+						// so return o1 greater
+						return 1;
+					} else {
+						// any other token and it means o2 is greater
+						return -1;
+					}
+				}
 			}
+			// is o2 done?
 			if (o2.length <= offset2) {
-				return 1;
+				// check o1's next token
+				type1 = o1[offset1] & 0xff;
+				if (type1 == COMPONENT_MINIMUM) {
+					return -1;
+				} else {
+					return 1;
+				}
 			}
 
 		}

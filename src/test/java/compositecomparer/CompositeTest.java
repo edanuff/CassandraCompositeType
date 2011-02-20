@@ -76,9 +76,9 @@ public class CompositeTest {
 		// 256 = 256
 		testCompare(serializeToByteBuffer(256), serializeToByteBuffer(256), 0);
 
-		// 256 < 256,MATCH_MINIMUM
+		// 256 > 256,MATCH_MINIMUM
 		testCompare(serializeToByteBuffer(256),
-				serializeToByteBuffer(256, Composite.MATCH_MINIMUM), -1);
+				serializeToByteBuffer(256, Composite.MATCH_MINIMUM), 1);
 
 		// 256,MATCH_MINIMUM < 256,0
 		testCompare(serializeToByteBuffer(256, Composite.MATCH_MINIMUM),
@@ -92,9 +92,13 @@ public class CompositeTest {
 		testCompare(serializeToByteBuffer("alpha"),
 				serializeToByteBuffer("beta"), -1);
 
-		// alpha < alpha,MATCH_MINIMUM
+		// alpha,MATCH_MINIMUM < alpha
+		testCompare(serializeToByteBuffer("alpha", Composite.MATCH_MINIMUM),
+				serializeToByteBuffer("alpha"), -1);
+
+		// alpha < alpha,MATCH_MAXIMUM
 		testCompare(serializeToByteBuffer("alpha"),
-				serializeToByteBuffer("alpha", Composite.MATCH_MINIMUM), -1);
+				serializeToByteBuffer("alpha", Composite.MATCH_MAXIMUM), -1);
 
 	}
 
