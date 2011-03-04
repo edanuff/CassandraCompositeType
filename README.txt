@@ -19,7 +19,7 @@ Once that has been built into Cassandra, the recommended approach will
 be to use the new DynamicCompositeType comparer rather than this one.
 
 The index-building techniques described here will still be applicable
-though and should be used in place of SupercColumn-based approaches and,
+though and should be used in place of SuperColumn-based approaches and,
 once support for composite-based indexes are incorporated into the major
 client libraries, will often be preferable to the built-in secondary
 indexes as well.
