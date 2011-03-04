@@ -8,6 +8,23 @@ For an example implemention of using it for indexing, see:
 
 https://github.com/edanuff/CassandraIndexedCollections
 
+-------------------------------------------------------------------------------
+Note:
+
+Be aware that most of the capabilities provided by this comparer have
+been incorporated in the proposed path described at
+https://issues.apache.org/jira/browse/CASSANDRA-2231 and will hopefully
+be present at some point at or after the release of 0.7.4.
+Once that has been built into Cassandra, the recommended approach will
+be to use the new DynamicCompositeType comparer rather than this one.
+
+The index-building techniques described here will still be applicable
+though and should be used in place of SupercColumn-based approaches and,
+once support for composite-based indexes are incorporated into the major
+client libraries, will often be preferable to the built-in secondary
+indexes as well.
+-------------------------------------------------------------------------------
+
 Although Cassandra provides SuperColumns which allow you to have columns
 containing columns, it's often desirable to use regular columns and to
 be able to combine two or more ids into a sortable column name.  This

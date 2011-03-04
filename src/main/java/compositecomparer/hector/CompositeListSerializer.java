@@ -1,4 +1,4 @@
-package me.prettyprint.cassandra.serializers;
+package compositecomparer.hector;
 
 /*
  * 
@@ -24,7 +24,9 @@ package me.prettyprint.cassandra.serializers;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-import org.apache.cassandra.db.marshal.Composite;
+import me.prettyprint.cassandra.serializers.AbstractSerializer;
+
+import compositecomparer.Composite;
 
 public class CompositeListSerializer extends AbstractSerializer<List<Object>> {
 

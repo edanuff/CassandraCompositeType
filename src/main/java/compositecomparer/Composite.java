@@ -1,4 +1,4 @@
-package org.apache.cassandra.db.marshal;
+package compositecomparer;
 
 /*
  * 
@@ -35,6 +35,8 @@ import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.apache.cassandra.db.marshal.MarshalException;
 
 /**
  * Composite type for Cassandra columns.

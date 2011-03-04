@@ -1,4 +1,4 @@
-package org.apache.cassandra.db.marshal;
+package compositecomparer;
 
 /*
  * 
@@ -23,6 +23,8 @@ package org.apache.cassandra.db.marshal;
 
 import java.nio.ByteBuffer;
 import java.util.logging.Logger;
+
+import org.apache.cassandra.db.marshal.AbstractType;
 
 /**
  * CompositeType comparer for Cassandra columns.

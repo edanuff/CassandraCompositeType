@@ -1,15 +1,16 @@
 package compositecomparer;
 
-import static org.apache.cassandra.db.marshal.Composite.serializeToByteBuffer;
+import static compositecomparer.Composite.serializeToByteBuffer;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
 import java.util.logging.Logger;
 
-import org.apache.cassandra.db.marshal.Composite;
-import org.apache.cassandra.db.marshal.CompositeType;
 import org.apache.cassandra.utils.FBUtilities;
 import org.junit.Test;
+
+import compositecomparer.Composite;
+import compositecomparer.CompositeType;
 
 public class CompositeTest {
 
