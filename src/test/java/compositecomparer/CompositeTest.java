@@ -6,11 +6,7 @@ import static org.junit.Assert.assertTrue;
 import java.nio.ByteBuffer;
 import java.util.logging.Logger;
 
-import org.apache.cassandra.utils.FBUtilities;
 import org.junit.Test;
-
-import compositecomparer.Composite;
-import compositecomparer.CompositeType;
 
 public class CompositeTest {
 
@@ -49,16 +45,14 @@ public class CompositeTest {
 	@Test
 	public void testCompare() {
 
-		CompositeType comparer = new CompositeType();
-
 		// Create and serialize composite value
 
 		Composite c1 = new Composite("smith", "bob", System.currentTimeMillis());
 		ByteBuffer o1 = c1.serializeToByteBuffer();
 		logger.info(c1.toString());
 
-		logger.info(comparer.getString(o1) + " is encoded as "
-				+ FBUtilities.bytesToHex(o1));
+		// logger.info(comparer.getString(o1) + " is encoded as "
+		// + FBUtilities.bytesToHex(o1));
 
 		// Deserialize composite value
 
