@@ -25,44 +25,50 @@ import java.util.Map;
 import org.apache.cassandra.config.ConfigurationException;
 import org.apache.cassandra.db.marshal.AbstractType;
 
-public class NewFBUtilities extends FBUtilities {
+public class NewFBUtilities extends FBUtilities
+{
 
-	private static final Map<String, AbstractType> comparatorCache = new HashMap<String, AbstractType>();
+    private static final Map<String, AbstractType> comparatorCache = new HashMap<String, AbstractType>();
 
-	public static AbstractType getComparator(String compareWith)
-			throws ConfigurationException {
-		// The speed up of this with a cache make sense because of the
-		// DynamicCompositeType
-		AbstractType type = comparatorCache.get(compareWith);
+    public static AbstractType getComparator(String compareWith)
+            throws ConfigurationException
+    {
+        // The speed up of this with a cache make sense because of the
+        // DynamicCompositeType
+        AbstractType type = comparatorCache.get(compareWith);
 
-		if (type != null) {
-			return type;
-		}
+        if (type != null)
+        {
+            return type;
+        }
 
-		String className = compareWith.contains(".") ? compareWith
-				: "org.apache.cassandra.db.marshal." + compareWith;
-		Class<? extends AbstractType> typeClass = FBUtilities
-				.<AbstractType> classForName(className, "abstract-type");
-		try {
-			Field field = typeClass.getDeclaredField("instance");
-			type = (AbstractType) field.get(null);
-			// no synchronization, it's ok for two thread to do this since
-			// AbstractType's are singletons
-			comparatorCache.put(compareWith, type);
-			return type;
-		} catch (NoSuchFieldException e) {
-			ConfigurationException ex = new ConfigurationException(
-					"Invalid comparator " + compareWith
-							+ " : must define a public static instance field.");
-			ex.initCause(e);
-			throw ex;
-		} catch (IllegalAccessException e) {
-			ConfigurationException ex = new ConfigurationException(
-					"Invalid comparator " + compareWith
-							+ " : must define a public static instance field.");
-			ex.initCause(e);
-			throw ex;
-		}
-	}
+        String className = compareWith.contains(".") ? compareWith
+                : "org.apache.cassandra.db.marshal." + compareWith;
+        Class<? extends AbstractType> typeClass = FBUtilities
+                .<AbstractType> classForName(className, "abstract-type");
+        try
+        {
+            Field field = typeClass.getDeclaredField("instance");
+            type = (AbstractType) field.get(null);
+            // no synchronization, it's ok for two thread to do this since
+            // AbstractType's are singletons
+            comparatorCache.put(compareWith, type);
+            return type;
+        } catch (NoSuchFieldException e)
+        {
+            ConfigurationException ex = new ConfigurationException(
+                    "Invalid comparator " + compareWith
+                            + " : must define a public static instance field.");
+            ex.initCause(e);
+            throw ex;
+        } catch (IllegalAccessException e)
+        {
+            ConfigurationException ex = new ConfigurationException(
+                    "Invalid comparator " + compareWith
+                            + " : must define a public static instance field.");
+            ex.initCause(e);
+            throw ex;
+        }
+    }
 
 }

@@ -52,36 +52,41 @@ import org.apache.cassandra.db.marshal.AbstractType;
  * @see "org.apache.cassandra.db.marshal.Composite"
  */
 
-public class CompositeType extends AbstractType {
+public class CompositeType extends AbstractType
+{
 
-	/**
+    /**
 	 * 
 	 */
-	public static final CompositeType instance = new CompositeType();
+    public static final CompositeType instance = new CompositeType();
 
-	/**
+    /**
 	 * 
 	 */
-	public CompositeType() {
-	}
+    public CompositeType()
+    {
+    }
 
-	static final Logger logger = Logger
-			.getLogger(CompositeType.class.getName());
+    static final Logger logger = Logger
+            .getLogger(CompositeType.class.getName());
 
-	@Override
-	public void validate(ByteBuffer buffer) {
-		Composite.validate(buffer, true);
-	}
+    @Override
+    public void validate(ByteBuffer buffer)
+    {
+        Composite.validate(buffer, true);
+    }
 
-	@Override
-	public String getString(ByteBuffer buffer) {
-		Composite c = new Composite(buffer);
-		return c.toString();
-	}
+    @Override
+    public String getString(ByteBuffer buffer)
+    {
+        Composite c = new Composite(buffer);
+        return c.toString();
+    }
 
-	@Override
-	public int compare(ByteBuffer b1, ByteBuffer b2) {
-		return Composite.compare(b1, b2);
-	}
+    @Override
+    public int compare(ByteBuffer b1, ByteBuffer b2)
+    {
+        return Composite.compare(b1, b2);
+    }
 
 }

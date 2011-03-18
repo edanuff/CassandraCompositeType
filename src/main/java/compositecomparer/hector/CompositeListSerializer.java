@@ -28,29 +28,35 @@ import me.prettyprint.cassandra.serializers.AbstractSerializer;
 
 import compositecomparer.Composite;
 
-public class CompositeListSerializer extends AbstractSerializer<List<Object>> {
+public class CompositeListSerializer extends AbstractSerializer<List<Object>>
+{
 
-	public CompositeListSerializer() {
-	}
+    public CompositeListSerializer()
+    {
+    }
 
-	@Override
-	public byte[] toBytes(List<Object> objects) {
-		return Composite.serialize(objects);
-	}
+    @Override
+    public byte[] toBytes(List<Object> objects)
+    {
+        return Composite.serialize(objects);
+    }
 
-	@Override
-	public List<Object> fromBytes(byte[] bytes) {
-		return Composite.deserialize(bytes);
-	}
+    @Override
+    public List<Object> fromBytes(byte[] bytes)
+    {
+        return Composite.deserialize(bytes);
+    }
 
-	@Override
-	public ByteBuffer toByteBuffer(List<Object> objects) {
-		return ByteBuffer.wrap(Composite.serialize(objects));
-	}
+    @Override
+    public ByteBuffer toByteBuffer(List<Object> objects)
+    {
+        return ByteBuffer.wrap(Composite.serialize(objects));
+    }
 
-	@Override
-	public List<Object> fromByteBuffer(ByteBuffer byteBuffer) {
-		return Composite.deserialize(byteBuffer);
-	}
+    @Override
+    public List<Object> fromByteBuffer(ByteBuffer byteBuffer)
+    {
+        return Composite.deserialize(byteBuffer);
+    }
 
 }
