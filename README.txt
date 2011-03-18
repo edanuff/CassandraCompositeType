@@ -11,8 +11,10 @@ https://github.com/edanuff/CassandraIndexedCollections
 -------------------------------------------------------------------------------
 Note:
 
-Be aware that most of the capabilities provided by this comparer have
-been incorporated in the proposed path described at
+Now includes preview version of the CASSANDRA-2231 DynamicCompositeType
+
+Be aware that most of the capabilities provided by original CompositeType comparer
+have been incorporated in the proposed patch described at
 https://issues.apache.org/jira/browse/CASSANDRA-2231 and will hopefully
 be present at some point at or after the release of 0.7.4.
 Once that has been built into Cassandra, the recommended approach will
