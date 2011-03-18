@@ -1,4 +1,4 @@
-package newcompositecomparer;
+package org.apache.cassandra.db.marshal;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -24,11 +24,8 @@ import static org.junit.Assert.fail;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
-import newcompositecomparer.DynamicCompositeType;
-import newcompositecomparer.FBUtilities;
-
-import org.apache.cassandra.db.marshal.MarshalException;
 import org.apache.cassandra.utils.ByteBufferUtil;
+import org.apache.cassandra.utils.FBUtilities;
 import org.apache.cassandra.utils.UUIDGen;
 import org.junit.Test;
 

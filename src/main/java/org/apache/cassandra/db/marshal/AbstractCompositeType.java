@@ -1,4 +1,4 @@
-package newcompositecomparer;
+package org.apache.cassandra.db.marshal;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;

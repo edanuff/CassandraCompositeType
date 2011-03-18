@@ -1,4 +1,4 @@
-package newcompositecomparer;
+package org.apache.cassandra.db.marshal;
 
 /*
  * 
@@ -37,6 +37,7 @@ import org.apache.cassandra.db.marshal.MarshalException;
 import org.apache.cassandra.db.marshal.TimeUUIDType;
 import org.apache.cassandra.db.marshal.UTF8Type;
 import org.apache.cassandra.utils.ByteBufferUtil;
+import org.apache.cassandra.utils.NewFBUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,7 +82,7 @@ public class DynamicCompositeType extends AbstractCompositeType {
 			int header = getShortLength(bb);
 			if ((header & 0x8000) == 0) {
 				String name = ByteBufferUtil.string(getBytes(bb, header));
-				return FBUtilities.getComparator(name);
+				return NewFBUtilities.getComparator(name);
 			} else {
 				return aliases.get((byte) (header & 0xFF));
 			}
@@ -120,7 +121,7 @@ public class DynamicCompositeType extends AbstractCompositeType {
 			if ((header & 0x8000) == 0) {
 				String name = ByteBufferUtil.string(getBytes(bb, header));
 				sb.append(name).append("@");
-				return FBUtilities.getComparator(name);
+				return NewFBUtilities.getComparator(name);
 			} else {
 				sb.append((char) (header & 0xFF)).append("@");
 				return aliases.get((byte) (header & 0xFF));
@@ -156,7 +157,7 @@ public class DynamicCompositeType extends AbstractCompositeType {
 
 			ByteBuffer value = getBytes(bb, header);
 			try {
-				comparator = FBUtilities.getComparator(ByteBufferUtil
+				comparator = NewFBUtilities.getComparator(ByteBufferUtil
 						.string(value));
 			} catch (Exception e) {
 				// we'll deal with this below since comparator == null
@@ -201,7 +202,7 @@ public class DynamicCompositeType extends AbstractCompositeType {
 				}
 				isAlias = t != null;
 				if (!isAlias) {
-					t = FBUtilities.getComparator(comparatorName);
+					t = NewFBUtilities.getComparator(comparatorName);
 				}
 				type = t;
 			} catch (ConfigurationException e) {
