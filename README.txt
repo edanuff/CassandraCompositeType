@@ -11,14 +11,16 @@ https://github.com/edanuff/CassandraIndexedCollections
 -------------------------------------------------------------------------------
 Note:
 
-Now includes preview version of the CASSANDRA-2231 DynamicCompositeType
-
 Be aware that most of the capabilities provided by original CompositeType comparer
 have been incorporated in the proposed patch described at
 https://issues.apache.org/jira/browse/CASSANDRA-2231 and will hopefully
 be present at some point at or after the release of 0.7.4.
 Once that has been built into Cassandra, the recommended approach will
 be to use the new DynamicCompositeType comparer rather than this one.
+
+Preview version of new CompositeType and DynamicCompositeType at:
+
+https://github.com/riptano/hector-composite
 
 The index-building techniques described here will still be applicable
 though and should be used in place of SuperColumn-based approaches and,
