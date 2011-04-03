@@ -1,4 +1,4 @@
-package compositecomparer;
+package comparators;
 
 /*
  * 

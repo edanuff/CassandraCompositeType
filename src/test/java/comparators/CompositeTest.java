@@ -1,12 +1,15 @@
-package compositecomparer;
+package comparators;
 
-import static compositecomparer.Composite.serializeToByteBuffer;
+import static comparators.Composite.serializeToByteBuffer;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
 import java.util.logging.Logger;
 
 import org.junit.Test;
+
+import comparators.Composite;
+import comparators.CompositeType;
 
 public class CompositeTest
 {

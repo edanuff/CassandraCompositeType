@@ -1,4 +1,4 @@
-package compositecomparer.hector;
+package comparators.hector;
 
 /*
  * 
@@ -21,42 +21,55 @@ package compositecomparer.hector;
  * 
  */
 
+/**
+ * CompositeSerializer for encoding Composite values.
+ * <p>
+ * See the {@link org.apache.cassandra.db.marshal.Composite Composite}
+ * class for more details on how to construct and use composites.
+ * 
+ * @author Ed Anuff
+ * @see <a
+ *      href="http://www.anuff.com/2010/07/secondary-indexes-in-cassandra.html">Secondary
+ *      indexes in Cassandra</a>
+ * @see "org.apache.cassandra.db.marshal.Composite"
+ * 
+ */
+
 import java.nio.ByteBuffer;
-import java.util.List;
 
 import me.prettyprint.cassandra.serializers.AbstractSerializer;
 
-import compositecomparer.Composite;
+import comparators.Composite;
 
-public class CompositeListSerializer extends AbstractSerializer<List<Object>>
+public class CompositeSerializer extends AbstractSerializer<Composite>
 {
 
-    public CompositeListSerializer()
+    public CompositeSerializer()
     {
     }
 
     @Override
-    public byte[] toBytes(List<Object> objects)
+    public byte[] toBytes(Composite obj)
     {
-        return Composite.serialize(objects);
+        return obj.serialize();
     }
 
     @Override
-    public List<Object> fromBytes(byte[] bytes)
+    public Composite fromBytes(byte[] bytes)
     {
-        return Composite.deserialize(bytes);
+        return new Composite(bytes);
     }
 
     @Override
-    public ByteBuffer toByteBuffer(List<Object> objects)
+    public ByteBuffer toByteBuffer(Composite obj)
     {
-        return ByteBuffer.wrap(Composite.serialize(objects));
+        return ByteBuffer.wrap(obj.serialize());
     }
 
     @Override
-    public List<Object> fromByteBuffer(ByteBuffer byteBuffer)
+    public Composite fromByteBuffer(ByteBuffer byteBuffer)
     {
-        return Composite.deserialize(byteBuffer);
+        return new Composite(byteBuffer);
     }
 
 }
