@@ -2,9 +2,11 @@ CompositeType for Cassandra
 
 For a more detailed description of how this might be used, please read:
 
+http://www.slideshare.net/edanuff/indexing-in-cassandra
+
 http://www.anuff.com/2010/07/secondary-indexes-in-cassandra.html
 
-For an example implemention of using it for indexing, see:
+For an example implementation of using it for indexing, see:
 
 https://github.com/edanuff/CassandraIndexedCollections
 
@@ -13,12 +15,11 @@ Note:
 
 Be aware that most of the capabilities provided by original CompositeType comparer
 have been incorporated in the proposed patch described at
-https://issues.apache.org/jira/browse/CASSANDRA-2231 and will hopefully
-be present at some point at or after the release of 0.7.4.
-Once that has been built into Cassandra, the recommended approach will
-be to use the new DynamicCompositeType comparer rather than this one.
+https://issues.apache.org/jira/browse/CASSANDRA-2231 and are now incorporated
+into Cassandra 0.8.1.
 
-Preview version of new CompositeType and DynamicCompositeType at:
+A version of new CompositeType and DynamicCompositeType that has been backported
+to 7.x is available at:
 
 https://github.com/riptano/hector-composite
 
