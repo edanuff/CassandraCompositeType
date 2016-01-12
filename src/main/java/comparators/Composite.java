@@ -279,6 +279,7 @@ public class Composite implements Collection<Object>, Comparable<Composite>
             try
             {
                 out.write(COMPONENT_STOP);
+                out.close();
             } catch (IOException e)
             {
                 logger.throwing("Composite", "pack", e);
